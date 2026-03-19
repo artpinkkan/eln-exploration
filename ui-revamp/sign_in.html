@@ -1,0 +1,200 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Sign In | Precision ELN</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-surface": "#191c1d",
+              "outline-variant": "#bfc9c3",
+              "secondary-container": "#cee9dc",
+              "on-error-container": "#93000a",
+              "outline": "#707974",
+              "primary-fixed": "#adf0d6",
+              "error-container": "#ffdad6",
+              "inverse-on-surface": "#f0f1f2",
+              "inverse-surface": "#2e3132",
+              "inverse-primary": "#92d4ba",
+              "secondary-fixed": "#cee9dc",
+              "on-secondary-fixed": "#082018",
+              "primary-container": "#135a46",
+              "primary-fixed-dim": "#92d4ba",
+              "secondary": "#4b6359",
+              "surface-container-highest": "#e1e3e4",
+              "on-primary-container": "#8dcfb6",
+              "on-primary-fixed-variant": "#02513e",
+              "on-primary-fixed": "#002117",
+              "on-secondary-fixed-variant": "#344c42",
+              "on-error": "#ffffff",
+              "primary": "#004131",
+              "on-primary": "#ffffff",
+              "surface-tint": "#276954",
+              "error": "#ba1a1a",
+              "tertiary-container": "#7a3e37",
+              "tertiary-fixed-dim": "#ffb4aa",
+              "surface-container-low": "#f3f4f5",
+              "on-tertiary-fixed-variant": "#70362f",
+              "surface-dim": "#d9dadb",
+              "tertiary-fixed": "#ffdad5",
+              "on-background": "#191c1d",
+              "on-tertiary-container": "#ffada2",
+              "on-secondary": "#ffffff",
+              "secondary-fixed-dim": "#b2ccc0",
+              "background": "#f8f9fa",
+              "surface-variant": "#e1e3e4",
+              "on-secondary-container": "#516a5f",
+              "surface-container": "#edeeef",
+              "surface-bright": "#f8f9fa",
+              "tertiary": "#5e2822",
+              "on-tertiary-fixed": "#390c08",
+              "surface": "#f8f9fa",
+              "on-tertiary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "on-surface-variant": "#3f4944",
+              "surface-container-high": "#e7e8e9"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .clinical-gradient {
+            background: linear-gradient(135deg, #004131 0%, #135a46 100%);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface overflow-hidden">
+<!-- Auth Wrapper: No NavBar for transactional screens per Shell Visibility Rule -->
+<main class="min-h-screen flex items-center justify-center p-4 md:p-8">
+<!-- Two-Pane Layout Container -->
+<div class="flex flex-col md:flex-row w-full max-w-5xl h-full md:h-[700px] overflow-hidden rounded-xl shadow-[0_24px_48px_-12px_rgba(25,28,29,0.04)] bg-surface-container-lowest">
+<!-- Left Pane: Brand Identity -->
+<div class="w-full md:w-1/2 clinical-gradient flex flex-col justify-between p-12 text-white relative">
+<!-- Abstract Background Pattern -->
+<div class="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+<div class="absolute -top-20 -left-20 w-80 h-80 rounded-full border-[1px] border-white"></div>
+<div class="absolute top-1/2 left-1/2 w-96 h-96 rounded-full border-[2px] border-white -translate-x-1/2 -translate-y-1/2 opacity-20"></div>
+</div>
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-16">
+<div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary font-bold" data-icon="science" style="">science</span>
+</div>
+<h1 class="font-headline font-extrabold text-2xl tracking-tight" style="">KALBE</h1>
+</div>
+<div class="space-y-4">
+<span class="font-label text-xs uppercase tracking-[0.2em] text-on-primary-container" style="">welcome to</span>
+<h2 class="font-headline text-4xl md:text-5xl font-bold leading-tight -ml-1" style=""><div>E-Laboratory Notebook</div></h2>
+<p class="text-on-primary-container max-w-sm text-lg font-light leading-relaxed" style="">
+                            Secure authentication gateway for the laboratoy notebook ecosystem.
+                        </p>
+</div>
+</div>
+<div class="relative z-10 flex items-center gap-6 opacity-60">
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest font-semibold" style="">developed by</span>
+<span class="text-sm" style="">Corp Digital Technology</span>
+</div>
+<div class="w-px h-8 bg-white/20"></div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase tracking-widest font-semibold" style="">app version</span>
+<span class="text-sm" style="">ELN v4.2</span>
+</div>
+</div>
+</div>
+<!-- Right Pane: Sign In Form -->
+<div class="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center bg-surface-container-lowest">
+<div class="max-w-md w-full mx-auto">
+<header class="mb-10">
+<h3 class="font-headline text-3xl font-bold text-on-surface mb-2 tracking-tight" style="">Sign In</h3>
+<p class="text-on-surface-variant font-body" style="">Enter your laboratory credentials to proceed.</p>
+</header>
+<form class="space-y-6">
+<!-- Username Field -->
+<div class="space-y-2">
+<label class="font-label text-sm font-semibold text-on-surface-variant tracking-wide" for="username" style="">Username</label>
+<div class="group relative">
+<div class="absolute inset-y-0 left-0 flex items-center pl-4 text-outline group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="person" style="">person</span>
+</div>
+<input class="w-full bg-surface-container-high border-none rounded-lg py-4 pl-12 pr-4 text-on-surface placeholder:text-outline/50 focus:ring-0 focus:bg-surface-container-highest transition-all duration-200" id="username" placeholder="john.doe@precision.eln" type="text">
+<div class="absolute bottom-0 left-0 w-0 h-[2px] bg-primary group-focus-within:w-full transition-all duration-300"></div>
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<label class="font-label text-sm font-semibold text-on-surface-variant tracking-wide" for="password" style="">Password</label>
+<a class="text-xs font-semibold text-primary hover:underline transition-all" href="#" style="">Forgot password?</a>
+</div>
+<div class="group relative">
+<div class="absolute inset-y-0 left-0 flex items-center pl-4 text-outline group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="lock" style="">lock</span>
+</div>
+<input class="w-full bg-surface-container-high border-none rounded-lg py-4 pl-12 pr-12 text-on-surface placeholder:text-outline/50 focus:ring-0 focus:bg-surface-container-highest transition-all duration-200" id="password" placeholder="••••••••" type="password">
+<div class="absolute inset-y-0 right-0 flex items-center pr-4">
+<button class="text-outline hover:text-on-surface transition-colors" type="button" style="">
+<span class="material-symbols-outlined text-lg" data-icon="visibility" style="">visibility</span>
+</button>
+</div>
+<div class="absolute bottom-0 left-0 w-0 h-[2px] bg-primary group-focus-within:w-full transition-all duration-300"></div>
+</div>
+</div>
+<!-- Remember Me -->
+<div class="flex items-center gap-3 py-2">
+<input class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary focus:ring-offset-0 bg-surface" id="remember" type="checkbox">
+<label class="text-sm text-on-surface-variant cursor-pointer" for="remember" style="">Remember this workstation</label>
+</div>
+<!-- Primary CTA -->
+<button class="w-full py-4 clinical-gradient text-white font-headline font-bold rounded-lg shadow-lg shadow-primary/10 hover:shadow-xl hover:opacity-95 transform active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 mt-4" type="submit" style="">
+                            Sign In
+                            <span class="material-symbols-outlined text-xl" data-icon="arrow_forward" style="">arrow_forward</span>
+</button>
+</form>
+<!-- Footer Info -->
+<footer class="mt-12 pt-8 border-t border-outline-variant/20">
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-3 text-on-surface-variant/60">
+<span class="material-symbols-outlined text-base" data-icon="verified_user" style="">verified_user</span>
+<span class="text-xs font-label uppercase tracking-widest" style="">Authorized Personnel Only</span>
+</div>
+<p class="text-[11px] leading-relaxed text-outline" style="">
+                                By signing in, you agree to the Institutional Data Governance Policy and Laboratory Information Systems terms of service. Unauthorized access attempts are logged and reported.
+                            </p>
+</div>
+</footer>
+</div>
+</div>
+</div>
+<!-- Background Aesthetics per the "Observational Lens" -->
+<div class="fixed inset-0 -z-10 bg-surface overflow-hidden">
+<div class="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -mr-64 -mt-64"></div>
+<div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/5 rounded-full blur-[100px] -ml-48 -mb-48"></div>
+</div>
+</main>
+<!-- Visual Identity Anchors -->
+<div class="fixed bottom-6 right-8 hidden md:flex items-center gap-4 px-4 py-2 bg-surface-container-high rounded-full border border-outline-variant/10">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-[10px] font-bold uppercase tracking-tighter text-on-surface-variant" style="">instance: production</span>
+</div>
+</body></html>

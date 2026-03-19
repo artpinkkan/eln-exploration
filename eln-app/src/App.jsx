@@ -1,7 +1,9 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import SignInPage from './pages/SignInPage'
 import Sidebar from './components/Sidebar'
 import RecipeProtocolPage from './pages/RecipeProtocolPage'
 
-function App() {
+function AppLayout() {
   return (
     <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex text-sm">
       <Sidebar />
@@ -9,6 +11,18 @@ function App() {
         <RecipeProtocolPage />
       </main>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<SignInPage />} />
+        <Route path="/app" element={<AppLayout />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Recipe and Protocol - ELN</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#135a46",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#0f172a",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1e293b",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                        mono: ["JetBrains Mono", "monospace"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                    },
+                },
+            },
+        };
+    </script>
+<style type="text/tailwindcss">
+        :root {
+            --primary-color: #135a46;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+        .cell-input-focus:focus-within {
+            @apply ring-1 ring-[var(--primary-color)] border-[var(--primary-color)];
+        }
+        .rich-text-toolbar button {
+            @apply p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors text-slate-600 dark:text-slate-400 flex items-center justify-center;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex relative overflow-hidden">
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+<div class="bg-surface-light dark:bg-surface-dark w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
+<div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined">auto_awesome_motion</span>
+</div>
+<div>
+<h2 class="text-xl font-bold text-slate-900 dark:text-white">Save as Formula Template</h2>
+<p class="text-xs text-slate-500 dark:text-slate-400">Convert this experiment into a reusable blueprint.</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="p-6 space-y-6 overflow-y-auto custom-scrollbar">
+<div class="space-y-4">
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Template Name</label>
+<input class="w-full text-sm bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary placeholder:text-slate-400" placeholder="e.g. Standard Emulsion Base v1" type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Category</label>
+<select class="w-full text-sm bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary">
+<option>Emulsions</option>
+<option>Serums</option>
+<option>Ointments</option>
+<option>Suspensions</option>
+</select>
+</div>
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Version Tag</label>
+<input class="w-full text-sm bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary" type="text" value="1.0.0"/>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Template Description</label>
+<textarea class="w-full text-sm bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary placeholder:text-slate-400" placeholder="Describe the intended use and key characteristics of this template..." rows="3"></textarea>
+</div>
+</div>
+<div class="space-y-3">
+<label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Include in Template</label>
+<div class="grid grid-cols-1 gap-2">
+<label class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 cursor-pointer hover:border-primary/30 transition-colors">
+<input checked="" class="w-4 h-4 rounded text-primary focus:ring-primary border-slate-300" type="checkbox"/>
+<div class="flex-1">
+<p class="text-sm font-semibold text-slate-900 dark:text-white">Materials &amp; Formulation</p>
+<p class="text-[11px] text-slate-500">Includes all phases, material codes, and theoretical quantities.</p>
+</div>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 cursor-pointer hover:border-primary/30 transition-colors">
+<input checked="" class="w-4 h-4 rounded text-primary focus:ring-primary border-slate-300" type="checkbox"/>
+<div class="flex-1">
+<p class="text-sm font-semibold text-slate-900 dark:text-white">Procedure &amp; Protocol</p>
+<p class="text-[11px] text-slate-500">Includes step-by-step instructions and critical process parameters.</p>
+</div>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 cursor-pointer hover:border-primary/30 transition-colors">
+<input class="w-4 h-4 rounded text-primary focus:ring-primary border-slate-300" type="checkbox"/>
+<div class="flex-1">
+<p class="text-sm font-semibold text-slate-900 dark:text-white">Product Specifications</p>
+<p class="text-[11px] text-slate-500">Includes release criteria and target physical properties.</p>
+</div>
+</label>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl flex items-center justify-between border border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400">group</span>
+<div>
+<p class="text-sm font-bold text-slate-900 dark:text-white">Shared with Team</p>
+<p class="text-[11px] text-slate-500">Allow other team members to use this template.</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<div class="px-6 py-5 bg-slate-50 dark:bg-slate-900/20 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+<button class="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                Cancel
+            </button>
+<button class="px-6 py-2 bg-[#135a46] hover:bg-[#0f4637] text-white rounded-lg text-sm font-bold shadow-md shadow-primary/20 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                Save Template
+            </button>
+</div>
+</div>
+</div>
+<aside class="w-16 border-r border-slate-200 dark:border-slate-800 bg-surface-light dark:bg-surface-dark flex flex-col items-center py-6 gap-6 sticky top-0 h-screen shrink-0">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">science</span>
+</div>
+<nav class="flex flex-col gap-4">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">dashboard</span>
+</button>
+<button class="p-2 text-primary bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined">inventory_2</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">history</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</nav>
+</aside>
+<main class="flex-1 flex flex-col overflow-hidden opacity-50 pointer-events-none">
+<header class="bg-surface-light dark:bg-surface-dark border-b border-slate-200 dark:border-slate-800 pt-4 px-8 sticky top-0 z-20">
+<div class="flex justify-between items-center mb-4">
+<nav class="flex text-sm text-slate-500 dark:text-slate-400 gap-2 items-center">
+<span>Projects</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="font-medium text-slate-900 dark:text-slate-200">Experiment Lab</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="material-symbols-outlined text-[18px]">biotech</span>
+<span>Formulation v2.4</span>
+</nav>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xs font-bold">PP</div>
+</div>
+</div>
+<div class="flex gap-8 overflow-x-auto no-scrollbar">
+<button class="pb-3 border-b-2 border-primary text-primary font-semibold flex items-center gap-2 whitespace-nowrap">
+<span class="material-symbols-outlined text-sm">description</span> Recipe and Protocol
+            </button>
+<button class="pb-3 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+<span class="material-symbols-outlined text-sm">inventory</span> Resource Availability
+            </button>
+<button class="pb-3 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+<span class="material-symbols-outlined text-sm">play_circle</span> Execution
+            </button>
+<button class="pb-3 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center gap-2 whitespace-nowrap">
+<span class="material-symbols-outlined text-sm">bar_chart</span> Data Analysis
+            </button>
+</div>
+</header>
+<div class="p-8 space-y-8 overflow-y-auto custom-scrollbar flex-1">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<div class="flex items-center gap-3">
+<h1 class="text-2xl font-bold text-slate-900 dark:text-white">Recipe &amp; Protocol</h1>
+<span class="px-2 py-1 rounded text-xs font-semibold bg-primary/10 text-primary border border-primary/20 uppercase tracking-wider">In Progress</span>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Last synchronization 2 minutes ago</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-sm">download</span> Export
+                </button>
+<button class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-sm">save</span> Save Changes
+                </button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
+<h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">info</span> Experiment Info
+                    </h2>
+</div>
+<div class="p-5 space-y-4">
+<div class="space-y-1">
+<label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Project Name</label>
+<input class="w-full text-sm bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg" type="text" value="Project Alpha - R&amp;D"/>
+</div>
+<div class="space-y-1">
+<label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Product Name</label>
+<input class="w-full text-sm bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg" type="text" value="Moisturizing Cream v2"/>
+</div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
+<h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">group</span> Collaborator Info
+                    </h2>
+</div>
+<div class="p-5 space-y-6">
+<div class="space-y-2">
+<label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Assign Managers</label>
+<select class="w-full text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg py-2.5">
+<option>Dr. Jane Smith</option>
+</select>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 flex justify-between items-center">
+<h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">description</span> Study Background
+                </h2>
+</div>
+<div class="p-0">
+<div class="rich-text-toolbar flex flex-wrap gap-1 p-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+<button><span class="material-symbols-outlined text-lg">format_bold</span></button>
+<button><span class="material-symbols-outlined text-lg">format_italic</span></button>
+<div class="w-px h-6 bg-slate-300 dark:bg-slate-700 mx-1"></div>
+<button><span class="material-symbols-outlined text-lg">format_list_bulleted</span></button>
+</div>
+<div class="p-8 min-h-[150px] prose dark:prose-invert max-w-none">
+<h3 class="text-lg font-bold mb-2">Objective</h3>
+<p class="text-slate-500 dark:text-slate-400">Develop a stable O/W emulsion with improved skin absorption characteristics.</p>
+</div>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/20">
+<h2 class="text-md font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">biotech</span> Materials &amp; Formulation
+                </h2>
+</div>
+<div class="p-6">
+<div class="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-lg flex items-center gap-4">
+<div class="flex-1 space-y-1">
+<p class="text-[10px] font-bold text-slate-400 uppercase">Scale</p>
+<p class="text-sm font-bold">100.00 kg</p>
+</div>
+<div class="flex-1 space-y-1">
+<p class="text-[10px] font-bold text-slate-400 uppercase">Status</p>
+<p class="text-sm font-bold text-green-600">Verified</p>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-4 pb-12">
+<div class="flex items-center justify-between">
+<h2 class="text-md font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">format_list_numbered</span> Procedure &amp; Protocol
+                </h2>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col md:flex-row">
+<div class="flex-1 p-5 flex gap-4 border-r border-slate-100 dark:border-slate-800">
+<div class="flex flex-col items-center gap-2">
+<div class="bg-primary text-white w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0">1</div>
+<span class="material-symbols-outlined text-slate-300 text-lg cursor-grab">drag_indicator</span>
+</div>
+<div class="flex-1 space-y-3">
+<div class="flex items-center justify-between">
+<input class="bg-transparent border-none p-0 text-sm font-bold text-slate-800 dark:text-slate-200 focus:ring-0 w-full" type="text" value="Aqueous Phase Preparation"/>
+<button class="text-slate-400"><span class="material-symbols-outlined text-sm">more_horiz</span></button>
+</div>
+<textarea class="w-full text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg p-3 focus:ring-primary focus:border-primary" rows="2">Combine Purified Water and Glycerin in the main tank. Heat to 75-80°C while stirring at 300 RPM.</textarea>
+</div>
+</div>
+<div class="w-full md:w-[450px] bg-slate-50/50 dark:bg-slate-900/30 p-5">
+<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Critical Process Parameters</p>
+<div class="grid grid-cols-4 gap-2 text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-2 px-1">
+<span>Parameter</span>
+<span>Min</span>
+<span>Max</span>
+<span>Unit</span>
+</div>
+<div class="space-y-2">
+<div class="grid grid-cols-4 gap-2">
+<input class="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded p-1.5" type="text" value="Temperature"/>
+<input class="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded p-1.5" type="text" value="75"/>
+<input class="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded p-1.5" type="text" value="80"/>
+<select class="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded p-1.5"><option>°C</option></select>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<input class="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded p-1.5" type="text" value="Agitation"/>
+<input class="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded p-1.5" type="text" value="280"/>
+<input class="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded p-1.5" type="text" value="320"/>
+<select class="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded p-1.5"><option>RPM</option></select>
+</div>
+</div>
+<button class="mt-3 text-[10px] font-bold text-primary flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-[14px]">add_circle</span> Add Criteria
+                    </button>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col md:flex-row">
+<div class="flex-1 p-5 flex gap-4 border-r border-slate-100 dark:border-slate-800">
+<div class="flex flex-col items-center gap-2">
+<div class="bg-primary text-white w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0">2</div>
+<span class="material-symbols-outlined text-slate-300 text-lg cursor-grab">drag_indicator</span>
+</div>
+<div class="flex-1 space-y-3">
+<div class="flex items-center justify-between">
+<input class="bg-transparent border-none p-0 text-sm font-bold text-slate-800 dark:text-slate-200 focus:ring-0 w-full" type="text" value="Emulsification"/>
+<button class="text-slate-400"><span class="material-symbols-outlined text-sm">more_horiz</span></button>
+</div>
+<textarea class="w-full text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-lg p-3 focus:ring-primary focus:border-primary" rows="2">Slowly add Oil Phase to Aqueous Phase while homogenizing at high speed for 15 minutes.</textarea>
+</div>
+</div>
+<div class="w-full md:w-[450px] bg-slate-50/50 dark:bg-slate-900/30 p-5">
+<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Critical Process Parameters</p>
+<div class="grid grid-cols-4 gap-2 text-[9px] text-slate-500 font-bold uppercase tracking-wider mb-2 px-1">
+<span>Parameter</span>
+<span>Min</span>
+<span>Max</span>
+<span>Unit</span>
+</div>
+<div class="space-y-2">
+<div class="grid grid-cols-4 gap-2">
+<input class="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded p-1.5" type="text" value="Homogenizer"/>
+<input class="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded p-1.5" type="text" value="2500"/>
+<input class="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded p-1.5" type="text" value="3000"/>
+<select class="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded p-1.5"><option>RPM</option></select>
+</div>
+</div>
+<button class="mt-3 text-[10px] font-bold text-primary flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-[14px]">add_circle</span> Add Criteria
+                    </button>
+</div>
+</div>
+<button class="w-full py-4 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 text-xs font-bold uppercase tracking-widest hover:border-primary/50 hover:text-primary transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">add</span> Add Procedure Step
+            </button>
+</div>
+</div>
+</main>
+<div class="fixed bottom-6 right-6 flex flex-col gap-3 items-end z-30">
+<button class="w-12 h-12 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full shadow-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-2xl">list_alt</span>
+</button>
+<div class="relative group">
+<button class="w-14 h-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform ring-4 ring-white dark:ring-slate-900">
+<span class="material-symbols-outlined text-2xl">forum</span>
+</button>
+<div class="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-white dark:border-slate-900">4</div>
+</div>
+</div>
+
+</body></html>

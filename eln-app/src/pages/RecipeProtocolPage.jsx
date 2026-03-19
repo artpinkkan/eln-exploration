@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import Header from '../components/Header'
 import ExperimentInfo from '../components/ExperimentInfo'
 import CollaboratorInfo from '../components/CollaboratorInfo'
@@ -6,8 +7,11 @@ import MaterialsFormulation from '../components/MaterialsFormulation'
 import ProductSpecification from '../components/ProductSpecification'
 import ProcedureProtocol from '../components/ProcedureProtocol'
 import FloatingActions from '../components/FloatingActions'
+import SaveAsFormulaModal from '../components/SaveAsFormulaModal'
 
 export default function RecipeProtocolPage() {
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
+
   return (
     <>
       <Header />
@@ -30,7 +34,10 @@ export default function RecipeProtocolPage() {
             <button className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 flex items-center gap-2 shadow-sm transition-colors text-slate-700 dark:text-slate-200">
               <span className="material-symbols-outlined text-sm">download</span> Export
             </button>
-            <button className="px-4 py-2 bg-white dark:bg-slate-800 border border-primary/30 text-primary rounded-lg text-sm font-medium hover:bg-primary/5 flex items-center gap-2 shadow-sm transition-colors">
+            <button
+              onClick={() => setShowTemplateModal(true)}
+              className="px-4 py-2 bg-white dark:bg-slate-800 border border-primary/30 text-primary rounded-lg text-sm font-medium hover:bg-primary/5 flex items-center gap-2 shadow-sm transition-colors"
+            >
               <span className="material-symbols-outlined text-sm">clinical_notes</span> Template
             </button>
             <button className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 flex items-center gap-2 shadow-sm transition-colors">
@@ -54,6 +61,9 @@ export default function RecipeProtocolPage() {
         <ProcedureProtocol />
       </div>
       <FloatingActions />
+      {showTemplateModal && (
+        <SaveAsFormulaModal onClose={() => setShowTemplateModal(false)} />
+      )}
     </>
   )
 }
