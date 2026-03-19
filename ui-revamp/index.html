@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recipe & Protocol — ELN</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ────────────── TOP NAV ────────────── -->
+  <header class="topnav">
+    <div class="topnav-left">
+      <span class="logo">⚗️ Project ELN</span>
+      <nav class="breadcrumb">
+        <a href="#">Projects</a>
+        <span class="sep">›</span>
+        <a href="#">Synthesis Lab 2024</a>
+        <span class="sep">›</span>
+        <a href="#">Experiment #42</a>
+        <span class="sep">›</span>
+        <span class="current">Recipe & Protocol</span>
+      </nav>
+    </div>
+    <div class="topnav-right">
+      <div class="avatar" title="Pinkan">P</div>
+    </div>
+  </header>
+
+  <!-- ────────────── PAGE WRAPPER ────────────── -->
+  <main class="page">
+
+    <!-- ── PAGE HEADER ── -->
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="title-row">
+          <h1 class="page-title">Suzuki–Miyaura Cross-Coupling Synthesis</h1>
+          <span class="status-badge status-active">Active</span>
+        </div>
+        <p class="page-subtitle">Version 3.1 &nbsp;·&nbsp; Last edited by <strong>Pinkan Tamaria</strong> on Mar 18, 2026</p>
+      </div>
+      <div class="page-header-right">
+        <button class="btn btn-ghost">Export PDF</button>
+        <button class="btn btn-ghost">Clone</button>
+        <button class="btn btn-primary">Edit Protocol</button>
+      </div>
+    </div>
+
+    <!-- ── META CARDS ── -->
+    <div class="meta-grid">
+      <div class="meta-card">
+        <span class="meta-label">Project</span>
+        <span class="meta-value">Synthesis Lab 2024</span>
+      </div>
+      <div class="meta-card">
+        <span class="meta-label">Experiment</span>
+        <span class="meta-value">#42 — Batch A</span>
+      </div>
+      <div class="meta-card">
+        <span class="meta-label">Created</span>
+        <span class="meta-value">Feb 10, 2026</span>
+      </div>
+      <div class="meta-card">
+        <span class="meta-label">Category</span>
+        <span class="meta-value">Organic Synthesis</span>
+      </div>
+      <div class="meta-card">
+        <span class="meta-label">Scale</span>
+        <span class="meta-value">1.0 mmol</span>
+      </div>
+      <div class="meta-card">
+        <span class="meta-label">Tags</span>
+        <span class="meta-value">
+          <span class="tag">Pd-catalysis</span>
+          <span class="tag">C–C coupling</span>
+          <span class="tag">aryl boronic</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- ── TABS ── -->
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="ingredients" role="tab">Ingredients</button>
+      <button class="tab" data-tab="steps" role="tab">Protocol Steps</button>
+      <button class="tab" data-tab="notes" role="tab">Notes & Observations</button>
+      <button class="tab" data-tab="files" role="tab">Attachments</button>
+    </div>
+
+    <!-- ── TAB: INGREDIENTS ── -->
+    <section class="tab-panel active" id="tab-ingredients">
+      <div class="section-header">
+        <h2 class="section-title">Ingredients / Materials</h2>
+        <button class="btn btn-ghost btn-sm">+ Add Row</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Component</th>
+              <th>CAS Number</th>
+              <th>MW (g/mol)</th>
+              <th>Amount</th>
+              <th>Unit</th>
+              <th>Equiv.</th>
+              <th>Role</th>
+              <th>Supplier</th>
+              <th>Lot #</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-num">1</td>
+              <td class="compound-name">4-Bromoanisole</td>
+              <td class="mono">104-92-7</td>
+              <td class="mono">187.04</td>
+              <td class="mono">187.0</td>
+              <td>mg</td>
+              <td class="mono">1.00</td>
+              <td><span class="role-badge role-substrate">Substrate</span></td>
+              <td>Sigma-Aldrich</td>
+              <td class="mono">MKB3291</td>
+            </tr>
+            <tr>
+              <td class="row-num">2</td>
+              <td class="compound-name">Phenylboronic acid</td>
+              <td class="mono">98-80-6</td>
+              <td class="mono">121.93</td>
+              <td class="mono">146.3</td>
+              <td>mg</td>
+              <td class="mono">1.20</td>
+              <td><span class="role-badge role-reagent">Reagent</span></td>
+              <td>TCI America</td>
+              <td class="mono">TCI-LN02</td>
+            </tr>
+            <tr>
+              <td class="row-num">3</td>
+              <td class="compound-name">Pd(PPh₃)₄</td>
+              <td class="mono">14221-01-3</td>
+              <td class="mono">1155.57</td>
+              <td class="mono">57.8</td>
+              <td>mg</td>
+              <td class="mono">0.05</td>
+              <td><span class="role-badge role-catalyst">Catalyst</span></td>
+              <td>Strem Chemicals</td>
+              <td class="mono">STR-41X</td>
+            </tr>
+            <tr>
+              <td class="row-num">4</td>
+              <td class="compound-name">K₂CO₃</td>
+              <td class="mono">584-08-7</td>
+              <td class="mono">138.21</td>
+              <td class="mono">414.6</td>
+              <td>mg</td>
+              <td class="mono">3.00</td>
+              <td><span class="role-badge role-base">Base</span></td>
+              <td>Fisher Scientific</td>
+              <td class="mono">FSC-7712</td>
+            </tr>
+            <tr>
+              <td class="row-num">5</td>
+              <td class="compound-name">DMF (anhydrous)</td>
+              <td class="mono">68-12-2</td>
+              <td class="mono">73.09</td>
+              <td class="mono">5.0</td>
+              <td>mL</td>
+              <td class="mono">—</td>
+              <td><span class="role-badge role-solvent">Solvent</span></td>
+              <td>Sigma-Aldrich</td>
+              <td class="mono">MKB0091</td>
+            </tr>
+            <tr>
+              <td class="row-num">6</td>
+              <td class="compound-name">H₂O (deionized)</td>
+              <td class="mono">7732-18-5</td>
+              <td class="mono">18.02</td>
+              <td class="mono">1.0</td>
+              <td>mL</td>
+              <td class="mono">—</td>
+              <td><span class="role-badge role-solvent">Solvent</span></td>
+              <td>In-house</td>
+              <td class="mono">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Product row -->
+      <div class="product-card">
+        <div class="product-icon">🧪</div>
+        <div class="product-info">
+          <span class="product-label">Expected Product</span>
+          <span class="product-name">4-Methoxybiphenyl</span>
+          <span class="product-meta">CAS 613-37-6 &nbsp;·&nbsp; MW 184.23 g/mol &nbsp;·&nbsp; Target yield ≥ 85%</span>
+        </div>
+        <div class="product-yield">
+          <span class="yield-label">Theoretical yield</span>
+          <span class="yield-value">184.2 mg</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── TAB: PROTOCOL STEPS ── -->
+    <section class="tab-panel" id="tab-steps">
+      <div class="section-header">
+        <h2 class="section-title">Protocol Steps</h2>
+        <button class="btn btn-ghost btn-sm">+ Add Step</button>
+      </div>
+
+      <ol class="steps-list">
+
+        <li class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-body">
+            <div class="step-header-row">
+              <h3 class="step-title">Preparation of reaction vessel</h3>
+              <span class="step-duration">⏱ 10 min</span>
+              <span class="step-status step-done">Done</span>
+            </div>
+            <p class="step-desc">Flame-dry a 25 mL round-bottom flask equipped with a magnetic stir bar under vacuum. Backfill with N₂ gas three times using a Schlenk line. Seal with a rubber septum.</p>
+            <div class="step-note">
+              <span class="note-icon">💡</span>
+              <span>Ensure all glassware is rigorously dry. Moisture deactivates the Pd catalyst.</span>
+            </div>
+          </div>
+        </li>
+
+        <li class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-body">
+            <div class="step-header-row">
+              <h3 class="step-title">Charge substrates and base</h3>
+              <span class="step-duration">⏱ 5 min</span>
+              <span class="step-status step-done">Done</span>
+            </div>
+            <p class="step-desc">Add 4-bromoanisole (187.0 mg, 1.0 mmol), phenylboronic acid (146.3 mg, 1.2 mmol), and K₂CO₃ (414.6 mg, 3.0 mmol) to the reaction flask under N₂ atmosphere.</p>
+          </div>
+        </li>
+
+        <li class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-body">
+            <div class="step-header-row">
+              <h3 class="step-title">Add solvent and catalyst</h3>
+              <span class="step-duration">⏱ 5 min</span>
+              <span class="step-status step-done">Done</span>
+            </div>
+            <p class="step-desc">Add DMF (5.0 mL) and H₂O (1.0 mL) via syringe. Add Pd(PPh₃)₄ (57.8 mg, 0.05 mmol, 5 mol%) quickly under N₂ flush.</p>
+            <div class="step-note">
+              <span class="note-icon">⚠️</span>
+              <span>Pd(PPh₃)₄ is air-sensitive. Minimize exposure time and work quickly.</span>
+            </div>
+          </div>
+        </li>
+
+        <li class="step-item">
+          <div class="step-number">4</div>
+          <div class="step-body">
+            <div class="step-header-row">
+              <h3 class="step-title">Heat and stir reaction</h3>
+              <span class="step-duration">⏱ 12 h</span>
+              <span class="step-status step-inprogress">In Progress</span>
+            </div>
+            <p class="step-desc">Place flask in a pre-heated oil bath at 80 °C. Stir at 400 rpm for 12 hours. Monitor reaction progress by TLC (hexane:EtOAc = 4:1, UV 254 nm).</p>
+            <div class="step-params">
+              <div class="param"><span class="param-key">Temperature</span><span class="param-val">80 °C</span></div>
+              <div class="param"><span class="param-key">Stir rate</span><span class="param-val">400 rpm</span></div>
+              <div class="param"><span class="param-key">Duration</span><span class="param-val">12 h</span></div>
+              <div class="param"><span class="param-key">Atmosphere</span><span class="param-val">N₂</span></div>
+            </div>
+          </div>
+        </li>
+
+        <li class="step-item step-pending">
+          <div class="step-number">5</div>
+          <div class="step-body">
+            <div class="step-header-row">
+              <h3 class="step-title">Workup — aqueous wash</h3>
+              <span class="step-duration">⏱ 30 min</span>
+              <span class="step-status step-pending-badge">Pending</span>
+            </div>
+            <p class="step-desc">Cool reaction to room temperature. Dilute with EtOAc (30 mL). Wash sequentially with saturated NH₄Cl (3 × 10 mL), then brine (1 × 10 mL). Dry organic layer over MgSO₄, filter, and concentrate in vacuo.</p>
+          </div>
+        </li>
+
+        <li class="step-item step-pending">
+          <div class="step-number">6</div>
+          <div class="step-body">
+            <div class="step-header-row">
+              <h3 class="step-title">Column chromatography purification</h3>
+              <span class="step-duration">⏱ 2 h</span>
+              <span class="step-status step-pending-badge">Pending</span>
+            </div>
+            <p class="step-desc">Purify crude product by silica gel column chromatography using hexane:EtOAc (9:1) as eluent. Collect fractions, check by TLC, combine pure fractions and evaporate solvent. Record mass of isolated product.</p>
+          </div>
+        </li>
+
+      </ol>
+    </section>
+
+    <!-- ── TAB: NOTES ── -->
+    <section class="tab-panel" id="tab-notes">
+      <div class="section-header">
+        <h2 class="section-title">Notes & Observations</h2>
+        <button class="btn btn-ghost btn-sm">+ Add Note</button>
+      </div>
+      <div class="notes-list">
+        <div class="note-card">
+          <div class="note-meta">
+            <span class="note-author">Pinkan Tamaria</span>
+            <span class="note-date">Mar 18, 2026 · 09:14</span>
+          </div>
+          <p class="note-text">TLC check at t=6h shows ~50% conversion (R<sub>f</sub> product = 0.45, R<sub>f</sub> SM = 0.22). Reaction is progressing as expected. Will check again at t=10h.</p>
+        </div>
+        <div class="note-card">
+          <div class="note-meta">
+            <span class="note-author">Pinkan Tamaria</span>
+            <span class="note-date">Mar 17, 2026 · 14:32</span>
+          </div>
+          <p class="note-text">Reaction mixture turned from pale yellow to dark amber upon addition of catalyst — consistent with Pd(0) complex formation. Proceeding normally.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── TAB: FILES ── -->
+    <section class="tab-panel" id="tab-files">
+      <div class="section-header">
+        <h2 class="section-title">Attachments</h2>
+        <button class="btn btn-ghost btn-sm">+ Upload File</button>
+      </div>
+      <div class="files-list">
+        <div class="file-item">
+          <div class="file-icon file-pdf">PDF</div>
+          <div class="file-info">
+            <span class="file-name">SOP_Suzuki_v3.pdf</span>
+            <span class="file-meta">1.2 MB · Uploaded Mar 10, 2026</span>
+          </div>
+          <button class="btn btn-ghost btn-sm">Download</button>
+        </div>
+        <div class="file-item">
+          <div class="file-icon file-img">IMG</div>
+          <div class="file-info">
+            <span class="file-name">TLC_t6h_photo.jpg</span>
+            <span class="file-meta">340 KB · Uploaded Mar 18, 2026</span>
+          </div>
+          <button class="btn btn-ghost btn-sm">Download</button>
+        </div>
+        <div class="file-item">
+          <div class="file-icon file-csv">CSV</div>
+          <div class="file-info">
+            <span class="file-name">HPLC_results_batch_A.csv</span>
+            <span class="file-meta">18 KB · Uploaded Mar 18, 2026</span>
+          </div>
+          <button class="btn btn-ghost btn-sm">Download</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
