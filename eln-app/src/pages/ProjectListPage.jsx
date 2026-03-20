@@ -208,241 +208,20 @@ export default function ProjectListPage() {
                   Manage and monitor active clinical trials and experimental workflows.
                 </p>
               </div>
-              <div className="flex gap-2 relative" ref={filterRef}>
-                <button
-                  onClick={() => setShowFilters((v) => !v)}
-                  className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 text-slate-700 flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-sm">filter_list</span>
-                  Advanced Filters
-                  {activeFilterCount > 0 && (
-                    <span className="w-5 h-5 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => setShowModal(true)}
-                  className="px-4 py-2 bg-primary text-white font-semibold rounded-lg flex items-center gap-2 shadow-sm hover:opacity-90 text-sm"
-                >
-                  <span className="material-symbols-outlined text-sm">add</span>
-                  Add Project
-                </button>
-
-                {/* Filter Popup */}
-                {showFilters && (
-                  <div className="absolute top-full right-0 mt-2 w-96 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden">
-                    <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-lg">tune</span>
-                        Advanced Filters
-                      </h3>
-                      <button
-                        onClick={() => setShowFilters(false)}
-                        className="p-1 hover:bg-slate-200 rounded text-slate-400"
-                      >
-                        <span className="material-symbols-outlined text-lg">close</span>
-                      </button>
-                    </div>
-
-                    <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
-                      {/* Name & Product */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                            Project Name
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Search name..."
-                            value={pendingFilters.name}
-                            onChange={(e) => setPendingFilters((f) => ({ ...f, name: e.target.value }))}
-                            className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:ring-primary focus:border-primary"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                            Product
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="e.g. Compound-X"
-                            value={pendingFilters.product}
-                            onChange={(e) => setPendingFilters((f) => ({ ...f, product: e.target.value }))}
-                            className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:ring-primary focus:border-primary"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Owner */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                          Project Owner
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Dr. S. Miller, etc."
-                          value={pendingFilters.owner}
-                          onChange={(e) => setPendingFilters((f) => ({ ...f, owner: e.target.value }))}
-                          className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:ring-primary focus:border-primary"
-                        />
-                      </div>
-
-                      {/* Tags */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                          Tags
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="R&D, Formulasi, etc."
-                          value={pendingFilters.tags}
-                          onChange={(e) => setPendingFilters((f) => ({ ...f, tags: e.target.value }))}
-                          className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:ring-primary focus:border-primary"
-                        />
-                      </div>
-
-                      {/* Budget Range */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                          Budget Range (Rp)
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            placeholder="Min"
-                            value={pendingFilters.budgetMin}
-                            onChange={(e) => setPendingFilters((f) => ({ ...f, budgetMin: e.target.value }))}
-                            className="w-full text-xs px-2 py-2 bg-slate-50 border border-slate-200 rounded-md"
-                          />
-                          <span className="text-slate-400 shrink-0">–</span>
-                          <input
-                            type="number"
-                            placeholder="Max"
-                            value={pendingFilters.budgetMax}
-                            onChange={(e) => setPendingFilters((f) => ({ ...f, budgetMax: e.target.value }))}
-                            className="w-full text-xs px-2 py-2 bg-slate-50 border border-slate-200 rounded-md"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Due Date */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                          Due Date (from)
-                        </label>
-                        <input
-                          type="date"
-                          value={pendingFilters.dueDate}
-                          onChange={(e) => setPendingFilters((f) => ({ ...f, dueDate: e.target.value }))}
-                          className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md"
-                        />
-                      </div>
-
-                      {/* Exp. Level Range & Status */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                            Exp. Level
-                          </label>
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              placeholder="Min"
-                              value={pendingFilters.expMin}
-                              onChange={(e) => setPendingFilters((f) => ({ ...f, expMin: e.target.value }))}
-                              className="w-full text-xs px-2 py-2 bg-slate-50 border border-slate-200 rounded-md"
-                            />
-                            <span className="text-slate-400 shrink-0">–</span>
-                            <input
-                              type="number"
-                              placeholder="Max"
-                              value={pendingFilters.expMax}
-                              onChange={(e) => setPendingFilters((f) => ({ ...f, expMax: e.target.value }))}
-                              className="w-full text-xs px-2 py-2 bg-slate-50 border border-slate-200 rounded-md"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                            Status
-                          </label>
-                          <select
-                            value={pendingFilters.status}
-                            onChange={(e) => setPendingFilters((f) => ({ ...f, status: e.target.value }))}
-                            className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:ring-primary focus:border-primary"
-                          >
-                            <option>All Statuses</option>
-                            <option>Active</option>
-                            <option>Archived</option>
-                            <option>Pending</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/30">
-                      <button
-                        onClick={resetFilters}
-                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900"
-                      >
-                        Reset
-                      </button>
-                      <button
-                        onClick={applyFilters}
-                        className="px-5 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:opacity-90 shadow-sm"
-                      >
-                        Apply Filters
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <button
+                onClick={() => setShowModal(true)}
+                className="px-4 py-2 bg-primary text-white font-semibold rounded-lg flex items-center gap-2 shadow-sm hover:opacity-90 text-sm"
+              >
+                <span className="material-symbols-outlined text-sm">add</span>
+                Add Project
+              </button>
             </div>
 
-            {/* Active filter chips */}
-            {activeFilterCount > 0 && (
-              <div className="flex flex-wrap gap-2 -mt-4">
-                {Object.entries(appliedFilters).map(([key, val]) => {
-                  if (key === 'status' && val === 'All Statuses') return null
-                  if (key !== 'status' && !val) return null
-                  const labels = {
-                    name: 'Name', product: 'Product', owner: 'Owner', tags: 'Tags',
-                    budgetMin: 'Budget ≥', budgetMax: 'Budget ≤',
-                    dueDate: 'Due from', expMin: 'Exp ≥', expMax: 'Exp ≤', status: 'Status',
-                  }
-                  return (
-                    <span
-                      key={key}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full border border-primary/20"
-                    >
-                      {labels[key]}: {val}
-                      <button
-                        onClick={() => {
-                          const updated = { ...appliedFilters, [key]: key === 'status' ? 'All Statuses' : '' }
-                          setAppliedFilters(updated)
-                          setPendingFilters(updated)
-                        }}
-                      >
-                        <span className="material-symbols-outlined text-xs">close</span>
-                      </button>
-                    </span>
-                  )
-                })}
-                <button
-                  onClick={resetFilters}
-                  className="text-xs text-slate-500 hover:text-slate-800 underline"
-                >
-                  Clear all
-                </button>
-              </div>
-            )}
-
             {/* Table Container */}
-            <div className="bg-surface-light rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-              {/* Search + Controls */}
-              <div className="p-6 border-b border-slate-100">
-                <div className="relative w-full md:w-96">
+            <div className="bg-surface-light rounded-xl shadow-sm border border-slate-200">
+              {/* Search + Advanced Filters */}
+              <div className="p-5 border-b border-slate-100 flex items-center gap-3" ref={filterRef}>
+                <div className="relative flex-1 max-w-sm">
                   <span className="absolute inset-y-0 left-4 flex items-center text-slate-400">
                     <span className="material-symbols-outlined text-lg">search</span>
                   </span>
@@ -454,7 +233,141 @@ export default function ProjectListPage() {
                     className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border-none rounded-lg text-sm focus:ring-1 focus:ring-primary/40 placeholder:text-slate-400"
                   />
                 </div>
+
+                <div className="relative">
+                  <button
+                    onClick={() => setShowFilters((v) => !v)}
+                    className="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-sm">tune</span>
+                    Advanced Filters
+                    {activeFilterCount > 0 && (
+                      <span className="w-5 h-5 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {showFilters && (
+                    <div className="absolute left-0 top-full mt-2 w-96 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden">
+                      <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-lg">tune</span>
+                          Advanced Filters
+                        </h3>
+                        <button onClick={() => setShowFilters(false)} className="p-1 hover:bg-slate-200 rounded text-slate-400">
+                          <span className="material-symbols-outlined text-lg">close</span>
+                        </button>
+                      </div>
+
+                      <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Project Name</label>
+                            <input type="text" placeholder="Search name..." value={pendingFilters.name}
+                              onChange={(e) => setPendingFilters((f) => ({ ...f, name: e.target.value }))}
+                              className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Product</label>
+                            <input type="text" placeholder="e.g. Compound-X" value={pendingFilters.product}
+                              onChange={(e) => setPendingFilters((f) => ({ ...f, product: e.target.value }))}
+                              className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary" />
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Project Owner</label>
+                          <input type="text" placeholder="Dr. S. Miller, etc." value={pendingFilters.owner}
+                            onChange={(e) => setPendingFilters((f) => ({ ...f, owner: e.target.value }))}
+                            className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tags</label>
+                          <input type="text" placeholder="R&D, Formulasi, etc." value={pendingFilters.tags}
+                            onChange={(e) => setPendingFilters((f) => ({ ...f, tags: e.target.value }))}
+                            className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Budget Range (Rp)</label>
+                          <div className="flex items-center gap-2">
+                            <input type="number" placeholder="Min" value={pendingFilters.budgetMin}
+                              onChange={(e) => setPendingFilters((f) => ({ ...f, budgetMin: e.target.value }))}
+                              className="w-full text-xs px-2 py-2 bg-slate-50 border border-slate-200 rounded-md" />
+                            <span className="text-slate-400 shrink-0">–</span>
+                            <input type="number" placeholder="Max" value={pendingFilters.budgetMax}
+                              onChange={(e) => setPendingFilters((f) => ({ ...f, budgetMax: e.target.value }))}
+                              className="w-full text-xs px-2 py-2 bg-slate-50 border border-slate-200 rounded-md" />
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Due Date (from)</label>
+                          <input type="date" value={pendingFilters.dueDate}
+                            onChange={(e) => setPendingFilters((f) => ({ ...f, dueDate: e.target.value }))}
+                            className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Exp. Level</label>
+                            <div className="flex items-center gap-1">
+                              <input type="number" placeholder="Min" value={pendingFilters.expMin}
+                                onChange={(e) => setPendingFilters((f) => ({ ...f, expMin: e.target.value }))}
+                                className="w-full text-xs px-2 py-2 bg-slate-50 border border-slate-200 rounded-md" />
+                              <span className="text-slate-400 shrink-0">–</span>
+                              <input type="number" placeholder="Max" value={pendingFilters.expMax}
+                                onChange={(e) => setPendingFilters((f) => ({ ...f, expMax: e.target.value }))}
+                                className="w-full text-xs px-2 py-2 bg-slate-50 border border-slate-200 rounded-md" />
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status</label>
+                            <select value={pendingFilters.status}
+                              onChange={(e) => setPendingFilters((f) => ({ ...f, status: e.target.value }))}
+                              className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary">
+                              <option>All Statuses</option>
+                              <option>Active</option>
+                              <option>Archived</option>
+                              <option>Pending</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/30">
+                        <button onClick={resetFilters} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900">Reset</button>
+                        <button onClick={applyFilters} className="px-5 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:opacity-90 shadow-sm">Apply Filters</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Active filter chips */}
+              {activeFilterCount > 0 && (
+                <div className="px-5 py-2 flex flex-wrap gap-2 border-b border-slate-100 bg-slate-50/40">
+                  {Object.entries(appliedFilters).map(([key, val]) => {
+                    if (key === 'status' && val === 'All Statuses') return null
+                    if (key !== 'status' && !val) return null
+                    const labels = {
+                      name: 'Name', product: 'Product', owner: 'Owner', tags: 'Tags',
+                      budgetMin: 'Budget ≥', budgetMax: 'Budget ≤',
+                      dueDate: 'Due from', expMin: 'Exp ≥', expMax: 'Exp ≤', status: 'Status',
+                    }
+                    return (
+                      <span key={key} className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full border border-primary/20">
+                        {labels[key]}: {val}
+                        <button onClick={() => {
+                          const updated = { ...appliedFilters, [key]: key === 'status' ? 'All Statuses' : '' }
+                          setAppliedFilters(updated)
+                          setPendingFilters(updated)
+                        }}>
+                          <span className="material-symbols-outlined text-xs">close</span>
+                        </button>
+                      </span>
+                    )
+                  })}
+                  <button onClick={resetFilters} className="text-xs text-slate-500 hover:text-slate-800 underline">Clear all</button>
+                </div>
+              )}
 
               {/* Table */}
               <div className="overflow-x-auto">
@@ -485,7 +398,7 @@ export default function ProjectListPage() {
                           key={project.id}
                           onDoubleClick={() => {
                             setFlashId(project.id)
-                            setTimeout(() => navigate('/app', { state: { projectName: project.name } }), 220)
+                            setTimeout(() => navigate('/experiment', { state: { projectName: project.name } }), 220)
                           }}
                           className={`transition-all duration-150 group cursor-pointer select-none ${
                             flashId === project.id

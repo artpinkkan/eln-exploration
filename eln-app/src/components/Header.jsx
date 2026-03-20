@@ -11,21 +11,28 @@ const TABS = [
 export default function Header() {
   const navigate = useNavigate()
   const location = useLocation()
-  const projectName = location.state?.projectName ?? 'Project Detail'
+  const projectName = location.state?.projectName ?? 'Neuro-Regen Alpha'
+  const experimentName = location.state?.experimentName ?? 'Recipe & Protocol'
 
   return (
     <header className="bg-surface-light dark:bg-surface-dark border-b border-slate-200 dark:border-slate-800 pt-4 px-8 sticky top-0 z-20">
       <div className="flex justify-between items-center mb-4">
-        <nav className="flex text-xs text-slate-500 dark:text-slate-400 gap-2 items-center uppercase tracking-wide">
+        <nav className="flex text-xs text-slate-400 gap-2 items-center uppercase tracking-wide">
           <button
             onClick={() => navigate('/projects')}
-            className="flex items-center gap-1 hover:text-primary transition-colors group"
+            className="hover:text-primary transition-colors"
           >
-            <span className="material-symbols-outlined text-[14px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
             Project List
           </button>
           <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="font-semibold text-slate-900 dark:text-slate-200">{projectName}</span>
+          <button
+            onClick={() => navigate('/experiment', { state: { projectName } })}
+            className="hover:text-primary transition-colors"
+          >
+            {projectName}
+          </button>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <span className="font-semibold text-slate-900 dark:text-slate-200">{experimentName}</span>
         </nav>
         <div className="flex items-center gap-4">
           <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
