@@ -12,6 +12,7 @@ export default function RecipeProtocolPage() {
   const [isEditing,          setIsEditing]          = useState(false)
   const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false)
   const [showSaveMenu,       setShowSaveMenu]       = useState(false)
+  const [controlsCollapsed,  setControlsCollapsed]  = useState(false)
 
   const saveMenuRef = useRef(null)
 
@@ -36,8 +37,10 @@ export default function RecipeProtocolPage() {
       <Header />
 
       {/* ── Sticky controls bar (outside scroll, so it never moves) ── */}
-      <div className="bg-white border-b border-slate-200 shrink-0">
+      <div className="relative bg-white border-b border-slate-200 shrink-0">
 
+        {!controlsCollapsed && (
+          <>
         {/* Row 1: Mode banner + Take Control / Finish Editing */}
         {isEditing ? (
           <div className="flex items-center justify-between px-8 py-1 bg-primary/5 border-b border-primary/20">
@@ -181,6 +184,19 @@ export default function RecipeProtocolPage() {
             </button>
           </div>
         </div>
+          </>
+        )}
+
+        {/* Collapse toggle — small pill at bottom-right, overlapping the border */}
+        <button
+          onClick={() => setControlsCollapsed((v) => !v)}
+          title={controlsCollapsed ? 'Show controls' : 'Hide controls'}
+          className="absolute bottom-0 right-8 translate-y-full flex items-center justify-center w-7 h-5 bg-white border border-t-0 border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-b-md shadow-sm transition-colors z-20"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+            {controlsCollapsed ? 'expand_more' : 'expand_less'}
+          </span>
+        </button>
       </div>
 
       {/* ── Scrollable content ── */}

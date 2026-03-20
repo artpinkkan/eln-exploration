@@ -51,21 +51,20 @@ export default function StudyBackground({ isEditing = false }) {
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <span className="material-symbols-outlined text-primary" style={{ fontSize: '18px' }}>description</span>
             Study Background
-          </h2>
-          <div className="flex items-center gap-2">
-            {/* Auto-save status */}
             {saveStatus === 'saving' && (
-              <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                <span className="material-symbols-outlined animate-spin" style={{ fontSize: '12px' }}>progress_activity</span>
+              <span className="flex items-center gap-1 text-[10px] font-medium text-slate-400 ml-1">
+                <span className="material-symbols-outlined animate-spin" style={{ fontSize: '11px' }}>autorenew</span>
                 Saving…
               </span>
             )}
             {saveStatus === 'saved' && (
-              <span className="flex items-center gap-1 text-[10px] text-emerald-500">
-                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>check_circle</span>
-                Saved
+              <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-500 ml-1">
+                <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>check_circle</span>
+                Automatically saved
               </span>
             )}
+          </h2>
+          <div className="flex items-center gap-2">
             {/* Expand into modal */}
             <button
               title="Open in full-screen editor"
@@ -110,15 +109,15 @@ export default function StudyBackground({ isEditing = false }) {
                 Study Background
                 <span className="text-[10px] font-normal text-slate-400 ml-1">— full-screen editor</span>
                 {saveStatus === 'saving' && (
-                  <span className="flex items-center gap-1 text-[10px] text-slate-400 font-normal">
-                    <span className="material-symbols-outlined animate-spin" style={{ fontSize: '12px' }}>progress_activity</span>
+                  <span className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
+                    <span className="material-symbols-outlined animate-spin" style={{ fontSize: '11px' }}>autorenew</span>
                     Saving…
                   </span>
                 )}
                 {saveStatus === 'saved' && (
-                  <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-normal">
-                    <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>check_circle</span>
-                    Saved
+                  <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-500">
+                    <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>check_circle</span>
+                    Automatically saved
                   </span>
                 )}
               </h2>
