@@ -1,55 +1,165 @@
-const TOOLBAR_BUTTONS = [
-  'format_bold', 'format_italic', 'format_underlined', 'format_strikethrough',
-  null,
-  'format_color_text', 'format_paint',
-  null,
-  'link', 'link_off',
-  null,
-  'format_list_bulleted', 'format_list_numbered',
-  null,
-  'format_align_left', 'format_align_center', 'format_align_right', 'format_align_justify',
-  null,
-  'table_chart', 'undo', 'redo', 'image',
-]
+import { useState, useRef, useCallback } from 'react'
+import RichTextEditor from './RichTextEditor'
 
-export default function StudyBackground() {
+const INITIAL_HTML = [
+  '<h3>Background</h3>',
+  '<p style="color:#64748b">Click here to start writing the experiment background...</p>',
+  '<h3>Study Design</h3>',
+  '<p style="color:#64748b">Define the parameters and constraints of your study...</p>',
+  '<h3>Objective</h3>',
+  '<p style="color:#64748b">State the primary and secondary goals of this formulation...</p>',
+].join('')
+
+export default function StudyBackground({ isEditing = false }) {
+  const inlineRef  = useRef(null)
+  const modalRef   = useRef(null)
+
+  const [collapsed,     setCollapsed]     = useState(false)
+  const [showExpanded,  setShowExpanded]  = useState(false)
+  const [saveStatus,    setSaveStatus]    = useState(null) // null | 'saving' | 'saved'
+  const saveTimerRef = useRef(null)
+
+  const handleChange = useCallback(() => {
+    setSaveStatus('saving')
+    clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      setSaveStatus('saved')
+    }, 800)
+  }, [])
+
+  function openExpanded() {
+    setShowExpanded(true)
+    // Seed modal editor with current inline content after it mounts
+    requestAnimationFrame(() => {
+      if (modalRef.current)
+        modalRef.current.innerHTML = inlineRef.current?.innerHTML ?? INITIAL_HTML
+    })
+  }
+
+  function applyExpanded() {
+    if (inlineRef.current)
+      inlineRef.current.innerHTML = modalRef.current?.innerHTML ?? ''
+    setShowExpanded(false)
+  }
+
   return (
-    <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 flex justify-between items-center">
-        <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary text-xl">description</span>
-          Study Background
-        </h2>
-        <span className="material-symbols-outlined text-slate-400">expand_more</span>
+    <>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-visible">
+
+        {/* ── Header ── */}
+        <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center rounded-t-xl">
+          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary" style={{ fontSize: '18px' }}>description</span>
+            Study Background
+          </h2>
+          <div className="flex items-center gap-2">
+            {/* Auto-save status */}
+            {saveStatus === 'saving' && (
+              <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                <span className="material-symbols-outlined animate-spin" style={{ fontSize: '12px' }}>progress_activity</span>
+                Saving…
+              </span>
+            )}
+            {saveStatus === 'saved' && (
+              <span className="flex items-center gap-1 text-[10px] text-emerald-500">
+                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>check_circle</span>
+                Saved
+              </span>
+            )}
+            {/* Expand into modal */}
+            <button
+              title="Open in full-screen editor"
+              onClick={openExpanded}
+              className="w-7 h-7 flex items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>open_in_full</span>
+            </button>
+            {/* Collapse */}
+            <button
+              onClick={() => setCollapsed((v) => !v)}
+              className="w-7 h-7 flex items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                {collapsed ? 'expand_more' : 'expand_less'}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Inline editor ── */}
+        {!collapsed && (
+          <RichTextEditor
+            ref={inlineRef}
+            isEditing={isEditing}
+            defaultHtml={INITIAL_HTML}
+            minHeight="260px"
+            onChange={handleChange}
+          />
+        )}
       </div>
-      <div>
-        <div className="rich-text-toolbar flex flex-wrap gap-1 p-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-          {TOOLBAR_BUTTONS.map((icon, i) =>
-            icon === null ? (
-              <div key={i} className="w-px h-6 bg-slate-300 dark:bg-slate-700 mx-1" />
-            ) : icon === 'font-size' ? (
-              <select key={i} className="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 py-1 px-2 rounded">
-                <option>16 px</option>
-              </select>
-            ) : (
-              <button key={icon}>
-                <span className="material-symbols-outlined text-lg">{icon}</span>
+
+      {/* ── Expanded modal ── */}
+      {showExpanded && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-6">
+          <div className="bg-white rounded-2xl shadow-2xl flex flex-col w-full max-w-5xl" style={{ maxHeight: '92vh' }}>
+
+            {/* Modal header */}
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between shrink-0">
+              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary" style={{ fontSize: '18px' }}>description</span>
+                Study Background
+                <span className="text-[10px] font-normal text-slate-400 ml-1">— full-screen editor</span>
+                {saveStatus === 'saving' && (
+                  <span className="flex items-center gap-1 text-[10px] text-slate-400 font-normal">
+                    <span className="material-symbols-outlined animate-spin" style={{ fontSize: '12px' }}>progress_activity</span>
+                    Saving…
+                  </span>
+                )}
+                {saveStatus === 'saved' && (
+                  <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-normal">
+                    <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>check_circle</span>
+                    Saved
+                  </span>
+                )}
+              </h2>
+              <button
+                onClick={() => setShowExpanded(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
               </button>
-            )
-          )}
-          <select className="text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 py-1 px-2 rounded">
-            <option>16 px</option>
-          </select>
+            </div>
+
+            {/* Modal editor (scrollable) */}
+            <div className="flex-1 overflow-y-auto">
+              <RichTextEditor
+                ref={modalRef}
+                isEditing={isEditing}
+                defaultHtml=""
+                minHeight="480px"
+                stickyToolbar
+                onChange={handleChange}
+              />
+            </div>
+
+            {/* Modal footer */}
+            <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 flex justify-end gap-2 shrink-0 rounded-b-2xl">
+              <button
+                onClick={() => setShowExpanded(false)}
+                className="px-4 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={applyExpanded}
+                className="px-5 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 shadow-sm transition-colors"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="p-8 min-h-[300px] prose dark:prose-invert max-w-none">
-          <h3 className="text-xl font-bold mb-4">Background</h3>
-          <p className="text-slate-500 dark:text-slate-400 mb-8">Click here to start writing the experiment background...</p>
-          <h3 className="text-xl font-bold mb-4">Study Design</h3>
-          <p className="text-slate-500 dark:text-slate-400 mb-8">Define the parameters and constraints of your study...</p>
-          <h3 className="text-xl font-bold mb-4">Objective</h3>
-          <p className="text-slate-500 dark:text-slate-400">State the primary and secondary goals of this formulation...</p>
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   )
 }

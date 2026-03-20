@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import Header from '../components/Header'
-import ExperimentInfo from '../components/ExperimentInfo'
-import CollaboratorInfo from '../components/CollaboratorInfo'
+import ExperimentCollaboratorBar from '../components/ExperimentCollaboratorBar'
 import StudyBackground from '../components/StudyBackground'
 import MaterialsFormulation from '../components/MaterialsFormulation'
 import ProductSpecification from '../components/ProductSpecification'
@@ -76,12 +75,9 @@ export default function RecipeProtocolPage() {
 
         {/* Row 2: Action buttons (always visible, enabled only in Editing) */}
         <div className="flex items-center justify-between px-8 py-2">
-          {/* Left: title + badges */}
+          {/* Left: badges */}
           <div className="flex items-center gap-3">
-            <div className="flex flex-col gap-0.5">
-              <h1 className="text-lg font-bold text-slate-900">Recipe &amp; Protocol</h1>
-              <span className="text-[10px] text-slate-400">Last sync: 20-03-2026 15:41</span>
-            </div>
+            <span className="text-[10px] text-slate-400">Last sync: 20-03-2026 15:41</span>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 uppercase tracking-widest">
               In Progress
             </span>
@@ -189,13 +185,12 @@ export default function RecipeProtocolPage() {
 
       {/* ── Scrollable content ── */}
       <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar flex-1">
-        <div className={isEditing ? '' : 'opacity-70 pointer-events-none select-none'}>
-          <div id="section-experiment-info" className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <ExperimentInfo />
-            <CollaboratorInfo />
+        <div>
+          <div id="section-experiment-info" className="mb-8">
+            <ExperimentCollaboratorBar isEditing={isEditing} />
           </div>
-          <div className="space-y-8">
-            <div id="section-study-background"><StudyBackground /></div>
+          <div className={`space-y-8 ${isEditing ? '' : 'opacity-70 pointer-events-none select-none'}`}>
+            <div id="section-study-background"><StudyBackground isEditing={isEditing} /></div>
             <div id="section-product-specification"><ProductSpecification /></div>
             <div id="section-materials"><MaterialsFormulation /></div>
             <div id="section-procedure"><ProcedureProtocol /></div>
