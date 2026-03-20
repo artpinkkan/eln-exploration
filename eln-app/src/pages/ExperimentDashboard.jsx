@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import Sidebar from '../components/Sidebar'
-import ProfileMenu from '../components/ProfileMenu'
 import CreateExperimentModal from '../components/CreateExperimentModal'
 import EditExperimentModal from '../components/EditExperimentModal'
 
@@ -188,61 +186,158 @@ export default function ExperimentDashboard() {
   const initials = (name) => name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
   return (
-    <div className="bg-background-light min-h-screen flex font-body text-on-surface">
-      <Sidebar />
+    <div className="flex flex-col h-full overflow-hidden">
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar */}
-        <header className="h-16 bg-white flex justify-between items-center px-8 border-b border-slate-200 shrink-0">
-          <nav className="flex items-center gap-2 text-xs text-slate-400 uppercase tracking-wide">
-            <button onClick={() => navigate('/projects')} className="hover:text-primary transition-colors">
-              Project List
-            </button>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="font-semibold text-slate-800">{projectName}</span>
-          </nav>
+      {/* ── Sticky page header ── */}
+      <div className="px-8 pt-6 pb-0 bg-white shrink-0">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <button className="p-2 text-slate-400 hover:bg-slate-100 rounded-full relative">
-              <span className="material-symbols-outlined text-xl">notifications</span>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />
-            </button>
-            <ProfileMenu />
-          </div>
-        </header>
-
-        {/* Main */}
-        <main className="flex-1 overflow-y-auto p-8">
-          {/* Project title */}
-          <div className="flex items-start justify-between mb-6">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary" style={{ fontSize: '24px' }}>science</span>
+            </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 font-headline">Project: {projectName}</h1>
-              <p className="text-sm text-slate-500 mt-1">
-                Phase II observation of neural regeneration in synthetic biological scaffold environments.
-              </p>
+              <div className="flex items-center gap-2 text-xs text-slate-400 mb-0.5">
+                <button onClick={() => navigate('/projects')} className="hover:text-primary transition-colors">Project List</button>
+                <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>chevron_right</span>
+                <span className="font-semibold text-slate-600">{projectName}</span>
+              </div>
+              <h1 className="text-xl font-bold text-slate-900">Experiment Dashboard</h1>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
+              <span className="material-symbols-outlined text-slate-400" style={{ fontSize: '14px' }}>science</span>
+              <span className="text-xs font-semibold text-slate-700">{experiments.length}</span>
+              <span className="text-[11px] text-slate-400">experiments</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
+              <span className="material-symbols-outlined text-slate-400" style={{ fontSize: '14px' }}>play_circle</span>
+              <span className="text-xs font-semibold text-slate-700">{experiments.filter((e) => getWorkflowLabel(e) === 'In Progress').length}</span>
+              <span className="text-[11px] text-slate-400">in progress</span>
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-primary text-white font-semibold rounded-lg flex items-center gap-2 shadow-sm hover:opacity-90 text-sm shrink-0"
+              className="ml-2 inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm"
             >
-              <span className="material-symbols-outlined text-sm">add</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>add</span>
               Add Experiment
             </button>
           </div>
+        </div>
+
+        {/* Search + filter toolbar in sticky header */}
+        <div className="flex items-center gap-3 py-3 border-t border-slate-200 -mx-8 px-8" ref={filterRef}>
+          <div className="relative flex-1 max-w-sm">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: '15px' }}>search</span>
+            <input
+              type="text"
+              placeholder="Search experiments..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary bg-slate-50 placeholder-slate-400"
+            />
+          </div>
+
+          <div className="relative ml-auto">
+            <button
+              onClick={() => setShowFilters((v) => !v)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>tune</span>
+              Advanced Filters
+              {activeFilterCount > 0 && (
+                <span className="w-4 h-4 bg-primary text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            {showFilters && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden">
+                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-base">tune</span>
+                    Advanced Filters
+                  </h3>
+                  <button onClick={() => setShowFilters(false)} className="p-1 hover:bg-slate-200 rounded text-slate-400">
+                    <span className="material-symbols-outlined text-base">close</span>
+                  </button>
+                </div>
+                <div className="p-4 space-y-3 max-h-[65vh] overflow-y-auto">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Experiment Name</label>
+                    <input type="text" placeholder="Search name..." value={pendingFilters.name}
+                      onChange={(e) => setPendingFilters((f) => ({ ...f, name: e.target.value }))}
+                      className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Workflow Status</label>
+                    <select value={pendingFilters.workflowStatus}
+                      onChange={(e) => setPendingFilters((f) => ({ ...f, workflowStatus: e.target.value }))}
+                      className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary">
+                      {WORKFLOW_STATUS_OPTIONS.map((o) => <option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Owner</label>
+                    <input type="text" placeholder="e.g. Dr. Aris Thorne" value={pendingFilters.owner}
+                      onChange={(e) => setPendingFilters((f) => ({ ...f, owner: e.target.value }))}
+                      className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Contributors (count)</label>
+                    <div className="flex items-center gap-2">
+                      <input type="number" placeholder="Min" min={0} value={pendingFilters.contributorsMin}
+                        onChange={(e) => setPendingFilters((f) => ({ ...f, contributorsMin: e.target.value }))}
+                        className="w-full text-xs px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-md" />
+                      <span className="text-slate-400 shrink-0">–</span>
+                      <input type="number" placeholder="Max" min={0} value={pendingFilters.contributorsMax}
+                        onChange={(e) => setPendingFilters((f) => ({ ...f, contributorsMax: e.target.value }))}
+                        className="w-full text-xs px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-md" />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Created Date</label>
+                    <div className="flex items-center gap-2">
+                      <input type="date" value={pendingFilters.createdFrom}
+                        onChange={(e) => setPendingFilters((f) => ({ ...f, createdFrom: e.target.value }))}
+                        className="w-full text-xs px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-md" />
+                      <span className="text-slate-400 shrink-0">–</span>
+                      <input type="date" value={pendingFilters.createdTo}
+                        onChange={(e) => setPendingFilters((f) => ({ ...f, createdTo: e.target.value }))}
+                        className="w-full text-xs px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-md" />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3 border-t border-slate-100 flex justify-end gap-2 bg-slate-50/30">
+                  <button onClick={resetFilters} className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900">Reset</button>
+                  <button onClick={applyFilters} className="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded-lg hover:opacity-90 shadow-sm">Apply</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Scrollable content ── */}
+      <div className="flex-1 overflow-auto custom-scrollbar">
+        <div className="px-8 py-4 space-y-4">
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-3 gap-4">
             {[
-              { label: 'Total Experiments', value: '24', sub: '+3 this week',     icon: 'science'     },
+              { label: 'Total Experiments', value: '24', sub: '+3 this week',      icon: 'science'     },
               { label: 'Active Runs',        value: '12', sub: 'Currently running', icon: 'play_circle' },
-              { label: 'Contributors',       value: '08', sub: 'Team members',     icon: 'group'       },
+              { label: 'Contributors',       value: '08', sub: 'Team members',      icon: 'group'       },
             ].map(({ label, value, sub, icon }) => (
-              <div key={label} className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 shadow-sm">
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-primary">{icon}</span>
+              <div key={label} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 shadow-sm">
+                <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-primary" style={{ fontSize: '20px' }}>{icon}</span>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
-                  <p className="text-2xl font-bold text-slate-900 font-headline leading-tight">{value}</p>
+                  <p className="text-xl font-bold text-slate-900 leading-tight">{value}</p>
                   <p className="text-[11px] text-slate-400">{sub}</p>
                 </div>
               </div>
@@ -250,154 +345,11 @@ export default function ExperimentDashboard() {
           </div>
 
           {/* Experiment table */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-
-            {/* Search + Advanced Settings */}
-            <div className="p-5 border-b border-slate-100 flex items-center gap-3">
-              <div className="relative flex-1 max-w-sm">
-                <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
-                  <span className="material-symbols-outlined text-lg">search</span>
-                </span>
-                <input
-                  type="text"
-                  placeholder="Filter experiments..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-lg text-sm focus:ring-1 focus:ring-primary/40 placeholder:text-slate-400"
-                />
-              </div>
-
-              {/* Advanced Settings trigger */}
-              <div className="relative" ref={filterRef}>
-                <button
-                  onClick={() => setShowFilters((v) => !v)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-sm">tune</span>
-                  Advanced Settings
-                  {activeFilterCount > 0 && (
-                    <span className="w-5 h-5 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </button>
-
-                {showFilters && (
-                  <div className="absolute left-0 top-full mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden">
-                    <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                      <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-lg">tune</span>
-                        Advanced Settings
-                      </h3>
-                      <button onClick={() => setShowFilters(false)} className="p-1 hover:bg-slate-200 rounded text-slate-400">
-                        <span className="material-symbols-outlined text-lg">close</span>
-                      </button>
-                    </div>
-
-                    <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
-                      {/* Experiment Name */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Experiment Name</label>
-                        <input
-                          type="text"
-                          placeholder="Search name..."
-                          value={pendingFilters.name}
-                          onChange={(e) => setPendingFilters((f) => ({ ...f, name: e.target.value }))}
-                          className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
-                        />
-                      </div>
-
-                      {/* Workflow Status */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Workflow Status</label>
-                        <select
-                          value={pendingFilters.workflowStatus}
-                          onChange={(e) => setPendingFilters((f) => ({ ...f, workflowStatus: e.target.value }))}
-                          className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
-                        >
-                          {WORKFLOW_STATUS_OPTIONS.map((o) => <option key={o}>{o}</option>)}
-                        </select>
-                      </div>
-
-                      {/* Owner */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Owner</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Dr. Aris Thorne"
-                          value={pendingFilters.owner}
-                          onChange={(e) => setPendingFilters((f) => ({ ...f, owner: e.target.value }))}
-                          className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
-                        />
-                      </div>
-
-                      {/* Contributors count */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Contributors (count)</label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            placeholder="Min"
-                            min={0}
-                            value={pendingFilters.contributorsMin}
-                            onChange={(e) => setPendingFilters((f) => ({ ...f, contributorsMin: e.target.value }))}
-                            className="w-full text-xs px-2 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
-                          />
-                          <span className="text-slate-400 shrink-0">–</span>
-                          <input
-                            type="number"
-                            placeholder="Max"
-                            min={0}
-                            value={pendingFilters.contributorsMax}
-                            onChange={(e) => setPendingFilters((f) => ({ ...f, contributorsMax: e.target.value }))}
-                            className="w-full text-xs px-2 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Created date range */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Created Date</label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="date"
-                            value={pendingFilters.createdFrom}
-                            onChange={(e) => setPendingFilters((f) => ({ ...f, createdFrom: e.target.value }))}
-                            className="w-full text-xs px-2 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
-                          />
-                          <span className="text-slate-400 shrink-0">–</span>
-                          <input
-                            type="date"
-                            value={pendingFilters.createdTo}
-                            onChange={(e) => setPendingFilters((f) => ({ ...f, createdTo: e.target.value }))}
-                            className="w-full text-xs px-2 py-2 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-primary"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50/30">
-                      <button
-                        onClick={resetFilters}
-                        className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900"
-                      >
-                        Reset
-                      </button>
-                      <button
-                        onClick={applyFilters}
-                        className="px-5 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:opacity-90 shadow-sm"
-                      >
-                        Apply Filters
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
 
             {/* Active filter chips */}
             {activeFilterCount > 0 && (
-              <div className="px-5 py-2 flex flex-wrap gap-2 border-b border-slate-100 bg-slate-50/40">
+              <div className="px-4 py-2 flex flex-wrap gap-2 border-b border-slate-100 bg-slate-50/40">
                 {Object.entries(appliedFilters).map(([key, val]) => {
                   if (key === 'workflowStatus' && val === 'All') return null
                   if (key !== 'workflowStatus' && !val) return null
@@ -407,41 +359,37 @@ export default function ExperimentDashboard() {
                     createdFrom: 'Created from', createdTo: 'Created to',
                   }
                   return (
-                    <span key={key} className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full border border-primary/20">
+                    <span key={key} className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-primary/10 text-primary text-[10px] font-semibold rounded-full border border-primary/20">
                       {labels[key]}: {val}
                       <button onClick={() => {
                         const updated = { ...appliedFilters, [key]: key === 'workflowStatus' ? 'All' : '' }
-                        setAppliedFilters(updated)
-                        setPendingFilters(updated)
+                        setAppliedFilters(updated); setPendingFilters(updated)
                       }}>
-                        <span className="material-symbols-outlined text-xs">close</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>close</span>
                       </button>
                     </span>
                   )
                 })}
-                <button onClick={resetFilters} className="text-xs text-slate-500 hover:text-slate-800 underline">
-                  Clear all
-                </button>
+                <button onClick={resetFilters} className="text-[10px] text-slate-500 hover:text-slate-800 underline">Clear all</button>
               </div>
             )}
 
-            {/* Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50">
-                    <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 w-12 text-center">#</th>
-                    <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Experiment Name</th>
-                    <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Workflow Status</th>
-                    <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Owner</th>
-                    <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Contributors</th>
-                    <th className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Created</th>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-10 text-center">#</th>
+                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Experiment Name</th>
+                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Workflow Status</th>
+                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Owner</th>
+                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Contributors</th>
+                    <th className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Created</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody>
                   {filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-16 text-center text-slate-400 text-sm">
+                      <td colSpan={6} className="px-6 py-16 text-center text-sm text-slate-400">
                         No experiments match your filters.
                       </td>
                     </tr>
@@ -450,14 +398,15 @@ export default function ExperimentDashboard() {
                       <tr
                         key={exp.id}
                         onDoubleClick={() => openExperiment(exp)}
-                        className={`cursor-pointer group transition-all duration-150 ${
-                          flashId === exp.id ? 'bg-primary/10' : 'hover:bg-slate-50/60'
+                        className={`border-b border-slate-100 last:border-0 cursor-pointer group transition-all duration-150 ${
+                          flashId === exp.id
+                            ? 'bg-primary/10'
+                            : idx % 2 === 0 ? 'bg-white hover:bg-primary/5' : 'bg-slate-50/40 hover:bg-primary/5'
                         }`}
                         title="Double-click to open experiment"
                       >
-                        <td className="px-4 py-4 text-center text-xs font-bold text-slate-400">{idx + 1}</td>
-
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-2.5 text-center text-xs font-bold text-slate-400">{idx + 1}</td>
+                        <td className="px-4 py-2.5">
                           <div className="flex items-center gap-2">
                             <button
                               onClick={(e) => { e.stopPropagation(); setEditingExp(exp) }}
@@ -465,40 +414,35 @@ export default function ExperimentDashboard() {
                               title="Edit experiment"
                               className="shrink-0 p-1 rounded text-slate-300 hover:text-amber-500 hover:bg-amber-50 transition-colors"
                             >
-                              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>edit</span>
+                              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>edit</span>
                             </button>
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold text-slate-900 group-hover:text-primary transition-colors truncate">
-                                {exp.name}
-                              </p>
-                              <p className="text-[11px] text-slate-400 truncate">{exp.subtitle}</p>
+                              <p className="text-xs font-semibold text-slate-900 group-hover:text-primary transition-colors truncate">{exp.name}</p>
+                              <p className="text-[10px] text-slate-400 truncate">{exp.subtitle}</p>
                             </div>
                           </div>
                         </td>
-
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-2.5">
                           <WorkflowStatus completedSteps={exp.completedSteps} haltedAt={exp.haltedAt} />
                         </td>
-
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary text-[9px] font-bold shrink-0">
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-primary text-[9px] font-bold shrink-0">
                               {initials(exp.owner)}
                             </div>
                             <span className="text-xs text-slate-700">{exp.owner}</span>
                           </div>
                         </td>
-
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-2.5">
                           {exp.contributors > 0 ? (
                             <div className="flex -space-x-1.5">
                               {Array.from({ length: Math.min(exp.contributors, 3) }).map((_, i) => (
-                                <div key={i} className="w-6 h-6 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-[9px] font-bold text-slate-500">
+                                <div key={i} className="w-5 h-5 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-[9px] font-bold text-slate-500">
                                   {i + 1}
                                 </div>
                               ))}
                               {exp.contributors > 3 && (
-                                <div className="w-6 h-6 rounded-full bg-primary/20 border-2 border-white flex items-center justify-center text-[9px] font-bold text-primary">
+                                <div className="w-5 h-5 rounded-full bg-primary/20 border-2 border-white flex items-center justify-center text-[9px] font-bold text-primary">
                                   +{exp.contributors - 3}
                                 </div>
                               )}
@@ -507,8 +451,7 @@ export default function ExperimentDashboard() {
                             <span className="text-xs text-slate-400">—</span>
                           )}
                         </td>
-
-                        <td className="px-4 py-4 text-xs text-slate-500">{exp.created}</td>
+                        <td className="px-4 py-2.5 text-xs text-slate-500">{exp.created}</td>
                       </tr>
                     ))
                   )}
@@ -516,22 +459,17 @@ export default function ExperimentDashboard() {
               </table>
             </div>
 
-            <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between">
+            <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between">
               <span className="text-xs text-slate-400">
                 Showing <span className="font-bold text-slate-700">{filtered.length}</span> of{' '}
                 <span className="font-bold text-slate-700">{experiments.length}</span> experiments
               </span>
-              <button className="text-xs text-primary font-semibold hover:underline flex items-center gap-1">
-                View all {experiments.length} experiments
-                <span className="material-symbols-outlined text-sm">expand_more</span>
-              </button>
+              <p className="text-[10px] text-slate-400">
+                Tip: Double-click a row to open its Recipe &amp; Protocol detail.
+              </p>
             </div>
           </div>
-
-          <p className="text-xs text-slate-400 text-center mt-6">
-            Tip: Double-click an experiment row to open its Recipe &amp; Protocol detail.
-          </p>
-        </main>
+        </div>
       </div>
 
       {showCreateModal && (

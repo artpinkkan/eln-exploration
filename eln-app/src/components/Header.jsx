@@ -1,5 +1,4 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import ProfileMenu from './ProfileMenu'
 
 const TABS = [
   { label: 'Recipe and Protocol', icon: 'description', active: true },
@@ -16,7 +15,7 @@ export default function Header() {
 
   return (
     <header className="bg-surface-light dark:bg-surface-dark border-b border-slate-200 dark:border-slate-800 pt-4 px-8 sticky top-0 z-20">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex items-center mb-4">
         <nav className="flex text-xs text-slate-400 gap-2 items-center uppercase tracking-wide">
           <button
             onClick={() => navigate('/projects')}
@@ -34,24 +33,18 @@ export default function Header() {
           <span className="material-symbols-outlined text-[14px]">chevron_right</span>
           <span className="font-semibold text-slate-900 dark:text-slate-200">{experimentName}</span>
         </nav>
-        <div className="flex items-center gap-4">
-          <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
-            <span className="material-symbols-outlined text-xl">notifications</span>
-          </button>
-          <ProfileMenu />
-        </div>
       </div>
       <div className="flex gap-8 overflow-x-auto no-scrollbar">
         {TABS.map((tab) => (
           <button
             key={tab.label}
-            className={`pb-3 border-b-2 flex items-center gap-2 whitespace-nowrap text-sm ${
+            className={`pb-3 border-b-2 flex items-center gap-1.5 whitespace-nowrap text-xs ${
               tab.active
                 ? 'border-primary text-primary font-semibold'
                 : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >
-            <span className="material-symbols-outlined text-sm">{tab.icon}</span>
+            <span className="material-symbols-outlined text-xs">{tab.icon}</span>
             {tab.label}
           </button>
         ))}

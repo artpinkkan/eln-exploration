@@ -75,7 +75,7 @@ export default function RecipeProtocolPage() {
         )}
 
         {/* Row 2: Action buttons (always visible, enabled only in Editing) */}
-        <div className="flex items-center justify-between px-8 py-3">
+        <div className="flex items-center justify-between px-8 py-2">
           {/* Left: title + badges */}
           <div className="flex items-center gap-3">
             <div className="flex flex-col gap-0.5">
