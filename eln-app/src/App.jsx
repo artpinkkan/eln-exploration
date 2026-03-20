@@ -11,6 +11,7 @@ import MaterialBatchMasterPage from './pages/system-config/MaterialBatchMasterPa
 import InstrumentCodeMasterPage from './pages/system-config/InstrumentCodeMasterPage'
 import ProductMasterPage from './pages/system-config/ProductMasterPage'
 import UserManagementPage from './pages/UserManagementPage'
+import AuditTrailPage from './pages/AuditTrailPage'
 
 function AppLayout({ children }) {
   return (
@@ -38,6 +39,7 @@ function App() {
         <Route path="/config/instrument-code" element={<AppLayout><InstrumentCodeMasterPage /></AppLayout>} />
         <Route path="/config/product"         element={<AppLayout><ProductMasterPage /></AppLayout>} />
         <Route path="/user-management"        element={<AppLayout><UserManagementPage /></AppLayout>} />
+        <Route path="/audit-trail"            element={<AppLayout><AuditTrailPage /></AppLayout>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

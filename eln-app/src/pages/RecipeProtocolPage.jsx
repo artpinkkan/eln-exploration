@@ -40,34 +40,34 @@ export default function RecipeProtocolPage() {
 
         {/* Row 1: Mode banner + Take Control / Finish Editing */}
         {isEditing ? (
-          <div className="flex items-center justify-between px-8 py-2 bg-primary/5 border-b border-primary/20">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary" style={{ fontSize: '16px' }}>edit</span>
-              <p className="text-xs font-semibold text-primary">
+          <div className="flex items-center justify-between px-8 py-1 bg-primary/5 border-b border-primary/20">
+            <div className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-primary" style={{ fontSize: '13px' }}>edit</span>
+              <p className="text-[11px] font-semibold text-primary">
                 Editing session active — you have control of this document.
               </p>
             </div>
             <button
               onClick={finishEditing}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+              className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 text-white text-[11px] font-semibold rounded-md hover:bg-emerald-700 transition-colors shadow-sm"
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check_circle</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>check_circle</span>
               Finish Editing
             </button>
           </div>
         ) : (
-          <div className="flex items-center justify-between px-8 py-2 bg-slate-50 border-b border-slate-200">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-slate-400" style={{ fontSize: '16px' }}>lock</span>
-              <p className="text-xs text-slate-500">
+          <div className="flex items-center justify-between px-8 py-1 bg-slate-50 border-b border-slate-200">
+            <div className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-slate-400" style={{ fontSize: '13px' }}>lock</span>
+              <p className="text-[11px] text-slate-500">
                 Read Only — start an editing session to make changes.
               </p>
             </div>
             <button
               onClick={() => setIsEditing(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-primary text-primary text-xs font-semibold rounded-lg hover:bg-primary/5 transition-colors"
+              className="inline-flex items-center gap-1 px-2.5 py-1 border border-primary text-primary text-[11px] font-semibold rounded-md hover:bg-primary/5 transition-colors"
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>edit</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>edit</span>
               Take Control
             </button>
           </div>
@@ -191,7 +191,7 @@ export default function RecipeProtocolPage() {
           </div>
           <div className={`space-y-8 ${isEditing ? '' : 'opacity-70 pointer-events-none select-none'}`}>
             <div id="section-study-background"><StudyBackground isEditing={isEditing} /></div>
-            <div id="section-product-specification"><ProductSpecification /></div>
+            <div id="section-product-specification"><ProductSpecification isEditing={isEditing} /></div>
             <div id="section-materials"><MaterialsFormulation /></div>
             <div id="section-procedure"><ProcedureProtocol /></div>
           </div>

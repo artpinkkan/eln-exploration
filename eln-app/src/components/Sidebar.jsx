@@ -208,9 +208,17 @@ export default function Sidebar() {
         {/* Audit Trail */}
         <button
           title={!isOpen ? 'Audit Trail' : undefined}
-          className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-colors"
+          onClick={() => navigate('/audit-trail')}
+          className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            location.pathname === '/audit-trail'
+              ? 'bg-primary/10 text-primary font-semibold'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+          }`}
         >
-          <span className="material-symbols-outlined text-slate-400 shrink-0" style={{ fontSize: '18px' }}>manage_search</span>
+          <span
+            className={`material-symbols-outlined shrink-0 ${location.pathname === '/audit-trail' ? 'text-primary' : 'text-slate-400'}`}
+            style={{ fontSize: '18px' }}
+          >manage_search</span>
           {isOpen && <span className="truncate">Audit Trail</span>}
         </button>
       </nav>
