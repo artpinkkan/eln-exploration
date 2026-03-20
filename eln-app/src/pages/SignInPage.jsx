@@ -10,7 +10,7 @@ export default function SignInPage() {
   function handleSubmit(e) {
     e.preventDefault()
     // Navigate to main app on submit
-    navigate('/app')
+    navigate('/projects')
   }
 
   return (
