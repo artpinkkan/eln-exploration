@@ -9,6 +9,18 @@ const MASTER_MATERIALS = [
   { code: 'MAT-061', name: 'Microcrystalline Cellulose', type: 'SAMPLE', qc: 'Pending' },
 ]
 
+// Mock Material Batches master data (from System Configuration)
+const MATERIAL_BATCHES = [
+  { id: 'B001', batchNo: 'BTH-2025-001', materialCode: 'MAT-001', qcStatus: 'Passed', expiryDate: '2026-12-31' },
+  { id: 'B002', batchNo: 'BTH-2025-002', materialCode: 'MAT-001', qcStatus: 'Passed', expiryDate: '2026-06-30' },
+  { id: 'B003', batchNo: 'BTH-2024-011', materialCode: 'MAT-002', qcStatus: 'Passed', expiryDate: '2025-09-15' },
+  { id: 'B004', batchNo: 'BTH-2024-012', materialCode: 'MAT-002', qcStatus: 'Pending', expiryDate: '2025-11-20' },
+  { id: 'B005', batchNo: 'BTH-2025-007', materialCode: 'MAT-003', qcStatus: 'Passed', expiryDate: '2026-03-01' },
+  { id: 'B006', batchNo: 'BTH-2025-008', materialCode: 'MAT-042', qcStatus: 'Passed', expiryDate: '2026-08-10' },
+  { id: 'B007', batchNo: 'BTH-2024-019', materialCode: 'MAT-055', qcStatus: 'Passed', expiryDate: '2025-07-22' },
+  { id: 'B008', batchNo: 'BTH-2025-003', materialCode: 'MAT-061', qcStatus: 'Pending', expiryDate: '2026-01-05' },
+]
+
 const TYPE_STYLES = {
   MATERIAL: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   SAMPLE: 'bg-sky-100    text-sky-700    border-sky-200',
@@ -51,22 +63,29 @@ const ALERT_STYLES = {
 // col 1 drag:     w-10 = 40px  → left-0
 // col 2 stage:    w-48 = 192px → left-10 (40px)
 // col 3 material: w-56 = 224px → left-[232px] (40+192)
+// Sticky left offsets — synchronized with exact pixel widths below to ensure perfect alignment during scroll
 const STICKY_DRAG = 'sticky left-0 z-10'
-const STICKY_STAGE = 'sticky left-10 z-10'
-const STICKY_MATERIAL = 'sticky left-[232px] z-10'
+const STICKY_STAGE = 'sticky left-[44px] z-10'
+const STICKY_MATERIAL = 'sticky left-[244px] z-10'
 // Solid backgrounds required so scrolling rows don't bleed through frozen cells
 const BG_HEADER = 'bg-slate-50 dark:bg-slate-900'
 const BG_STAGE = 'bg-slate-50 dark:bg-slate-900'
 const BG_MATERIAL = 'bg-white dark:bg-slate-950'
 // Thicker right border on last frozen column as a visual freeze indicator
-const FREEZE_BORDER = 'border-r-2 border-r-slate-200 dark:border-r-slate-700'
+const FREEZE_BORDER = 'border-r-2 border-r-slate-300 dark:border-r-slate-500/50'
 
 export default function MaterialsFormulation() {
+  const [isSectionOpen, setIsSectionOpen] = useState(true)
   const [numeratorUom, setNumeratorUom] = useState('g')
   const [useIndividualScales, setUseIndividualScales] = useState(false)
   const [denominatorUom, setDenominatorUom] = useState('Ampoule')
   const [scale, setScale] = useState(100)
-  const [formulas, setFormulas] = useState([{ id: 1, name: 'Formula 1' }])
+  const [formulas, setFormulas] = useState([{ id: 1, name: 'Formula 1', scale: 100, includedStageIds: new Set() }])
+  // Track which formula's rename input is currently focused (for inline duplicate alert)
+  const [renamingFormulaId, setRenamingFormulaId] = useState(null)
+  const [openFormulaSettings, setOpenFormulaSettings] = useState(null)
+  // key: `${stageId}-${matId}-${formulaId}`
+  const [openCellSettings, setOpenCellSettings] = useState(null)
   const [stages, setStages] = useState([])
   const [isDirty, setIsDirty] = useState(false)
   const [dismissedAlerts, setDismissedAlerts] = useState(new Set())
@@ -76,20 +95,46 @@ export default function MaterialsFormulation() {
   const mutate = (fn) => { setStages(fn); setIsDirty(true) }
 
   const emptyFormulaValues = () =>
-    Object.fromEntries(formulas.map(f => [f.id, { qty: '', uom: 'g' }]))
+    Object.fromEntries(formulas.map(f => [f.id, { qty: '', uom: 'g', included: true, batchId: null }]))
 
   // ── Formula column actions ────────────────────────────────────────────────
 
   const addFormula = () => {
-    const newFormula = { id: nextFormulaId++, name: `Formula ${formulas.length + 1}` }
+    const newFormula = {
+      id: nextFormulaId++,
+      name: `Formula ${formulas.length + 1}`,
+      scale: 100,
+      includedStageIds: new Set(stages.map(s => s.id)),
+    }
     setFormulas(prev => [...prev, newFormula])
     setStages(prev => prev.map(s => ({
       ...s,
       materials: s.materials.map(m => ({
         ...m,
-        formulaValues: { ...m.formulaValues, [newFormula.id]: { qty: '', uom: 'g' } },
+        formulaValues: { ...m.formulaValues, [newFormula.id]: { qty: '', uom: 'g', included: true, batchId: null } },
       })),
     })))
+    setIsDirty(true)
+  }
+
+  const renameFormula = (formulaId, newName) => {
+    setFormulas(prev => prev.map(f => f.id === formulaId ? { ...f, name: newName } : f))
+    setIsDirty(true)
+  }
+
+  const setFormulaScale = (formulaId, value) => {
+    setFormulas(prev => prev.map(f => f.id === formulaId ? { ...f, scale: parseFloat(value) || 1 } : f))
+    setIsDirty(true)
+  }
+
+  const toggleFormulaStage = (formulaId, stageId) => {
+    setFormulas(prev => prev.map(f => {
+      if (f.id !== formulaId) return f
+      const next = new Set(f.includedStageIds)
+      if (next.has(stageId)) next.delete(stageId)
+      else next.add(stageId)
+      return { ...f, includedStageIds: next }
+    }))
     setIsDirty(true)
   }
 
@@ -108,8 +153,15 @@ export default function MaterialsFormulation() {
 
   // ── Stage / material actions ──────────────────────────────────────────────
 
-  const addStage = () =>
-    mutate(prev => [...prev, { id: nextStageId++, name: 'New Stage', materials: [] }])
+  const addStage = () => {
+    const newStageId = nextStageId++
+    // Include newly added stage in ALL existing formulas
+    setFormulas(prev => prev.map(f => ({
+      ...f,
+      includedStageIds: new Set([...f.includedStageIds, newStageId]),
+    })))
+    mutate(prev => [...prev, { id: newStageId, name: 'New Stage', materials: [] }])
+  }
 
   const updateStageName = (stageId, name) =>
     mutate(prev => prev.map(s => s.id === stageId ? { ...s, name } : s))
@@ -173,13 +225,19 @@ export default function MaterialsFormulation() {
 
   const totalPerFormula = formulas.map(f => ({
     id: f.id,
-    total: allMaterials.reduce((sum, m) => {
-      const fv = m.formulaValues?.[f.id]
-      if (!fv?.qty) return sum
-      if (fv.uom === numeratorUom) return sum + (parseFloat(fv.qty) || 0)
-      const conv = convertToNumerator(fv.qty, fv.uom, numeratorUom)
-      return conv?.value != null ? sum + conv.value : sum
-    }, 0),
+    total: stages
+      .filter(s => f.includedStageIds.size === 0 || f.includedStageIds.has(s.id))
+      .flatMap(s => s.materials.map(m => ({
+        ...m,
+        material: MASTER_MATERIALS.find(mm => mm.code === m.materialCode),
+      })))
+      .reduce((sum, m) => {
+        const fv = m.formulaValues?.[f.id]
+        if (!fv?.qty || fv.included === false) return sum   // skip excluded cells
+        if (fv.uom === numeratorUom) return sum + (parseFloat(fv.qty) || 0)
+        const conv = convertToNumerator(fv.qty, fv.uom, numeratorUom)
+        return conv?.value != null ? sum + conv.value : sum
+      }, 0),
   }))
 
   // ── Alerts ────────────────────────────────────────────────────────────────
@@ -221,19 +279,36 @@ export default function MaterialsFormulation() {
   return (
     <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
       {/* Header — "+ Formula" removed; use the + icon at the table's right edge instead */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/20">
+      <div
+        className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/20 cursor-pointer select-none"
+        onClick={() => setIsSectionOpen(prev => !prev)}
+      >
         <h2 className="text-md font-semibold text-slate-900 dark:text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-primary">biotech</span>
           Materials &amp; Formulation
         </h2>
-        {isDirty && (
+        <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+          {isDirty && isSectionOpen && (
+            <button
+              onClick={handleSave}
+              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[15px]">save</span> Save
+            </button>
+          )}
           <button
-            onClick={handleSave}
-            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
+            onClick={() => setIsSectionOpen(prev => !prev)}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded"
+            title={isSectionOpen ? 'Collapse' : 'Expand'}
           >
-            <span className="material-symbols-outlined text-[15px]">save</span> Save
+            <span
+              className="material-symbols-outlined text-[20px] transition-transform duration-200"
+              style={{ transform: isSectionOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+            >
+              expand_more
+            </span>
           </button>
-        )}
+        </div>
       </div>
 
       {/* Alert panel */}
@@ -268,115 +343,173 @@ export default function MaterialsFormulation() {
         </div>
       )}
 
-      <div className="p-6 space-y-6">
-        {/* UOM Config Row */}
-        <div className="bg-slate-50 dark:bg-slate-900/40 p-4 rounded-lg space-y-3">
-          <div className={`grid grid-cols-1 gap-4 ${useIndividualScales ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
-            <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Numerator UOM</label>
-              <select
-                value={numeratorUom}
-                onChange={(e) => setNumeratorUom(e.target.value)}
-                className="w-full text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded focus:ring-primary h-9"
-              >
-                <option>g</option>
-                <option>kg</option>
-                <option>L</option>
-                <option>µg</option>
-                <option>µL</option>
-                <option>mg</option>
-                <option>mL</option>
-                <option>ng</option>
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Denominator UOM</label>
-              <select
-                value={denominatorUom}
-                onChange={(e) => setDenominatorUom(e.target.value)}
-                className="w-full text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded focus:ring-primary h-9"
-              >
-                <option>Ampoule</option>
-                <option>Bottle</option>
-                <option>Cell</option>
-                <option>Piece</option>
-                <option>Sachet</option>
-                <option>Syringe</option>
-                <option>Tablet</option>
-              </select>
-            </div>
-            {!useIndividualScales && (
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Scale</label>
-                <input
-                  type="number"
-                  value={scale}
-                  min={1}
-                  onChange={(e) => setScale(parseFloat(e.target.value) || 1)}
-                  className="w-full text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded focus:ring-primary h-9"
-                />
-              </div>
-            )}
-            <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Scale UOM</label>
+      {isSectionOpen && <div className="p-6 space-y-6">
+        {/* UOM Config — compact fraction bar */}
+        <div className="bg-slate-50 dark:bg-slate-900/40 px-4 py-3 rounded-lg">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Label */}
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider shrink-0">Formula unit</span>
+            {/* Scale */}
+            {!useIndividualScales ? (
               <input
-                type="text"
-                value={denominatorUom}
-                readOnly
-                className="w-full text-sm bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded h-9 cursor-not-allowed opacity-60"
+                type="number"
+                value={scale}
+                min={1}
+                onChange={(e) => setScale(parseFloat(e.target.value) || 1)}
+                className="w-20 text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md py-1 px-2 focus:ring-1 focus:ring-primary text-center"
+                title="Scale"
               />
-            </div>
+            ) : (
+              <span className="text-[10px] text-slate-400 italic px-2 py-1 flex items-center border border-dashed border-slate-200 dark:border-slate-700 rounded-md">
+                per formula
+              </span>
+            )}
+            {/* × */}
+            <span className="text-slate-400 font-semibold text-xs">×</span>
+            {/* Numerator UOM */}
+            <select
+              value={numeratorUom}
+              onChange={(e) => setNumeratorUom(e.target.value)}
+              className="text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md py-1 pl-2 pr-6 min-w-[64px] focus:ring-1 focus:ring-primary text-slate-700 dark:text-slate-200"
+              title="Numerator UOM"
+            >
+              {['g', 'kg', 'L', 'µg', 'µL', 'mg', 'mL', 'ng'].map(u => <option key={u}>{u}</option>)}
+            </select>
+            {/* / divider */}
+            <span className="text-slate-400 font-bold text-xs leading-none">/</span>
+            {/* Denominator UOM */}
+            <select
+              value={denominatorUom}
+              onChange={(e) => setDenominatorUom(e.target.value)}
+              className="text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md py-1 pl-2 pr-6 min-w-[88px] focus:ring-1 focus:ring-primary text-slate-700 dark:text-slate-200"
+              title="Denominator UOM"
+            >
+              {['Ampoule', 'Bottle', 'Cell', 'Piece', 'Sachet', 'Syringe', 'Tablet'].map(u => <option key={u}>{u}</option>)}
+            </select>
+            {/* Divider */}
+            <span className="text-slate-200 dark:text-slate-700 mx-1">|</span>
+            {/* Individual scales toggle */}
+            <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+              <div
+                onClick={() => setUseIndividualScales(v => !v)}
+                className={`relative w-8 h-4 rounded-full transition-colors cursor-pointer ${useIndividualScales ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}`}
+              >
+                <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${useIndividualScales ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </div>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Individual scales</span>
+            </label>
           </div>
-          <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={useIndividualScales}
-              onChange={(e) => setUseIndividualScales(e.target.checked)}
-              className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary"
-            />
-            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Use individual scales per-formula</span>
-          </label>
         </div>
 
         {/* Stage Table — overflow-x-auto enables scroll; cols 1-3 are position:sticky */}
         <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-lg">
-          <table className="w-full text-sm border-collapse">
+          <table className="min-w-max w-full text-sm border-collapse">
             <thead>
               <tr className="text-left">
                 {/* col 1 — drag (frozen) */}
-                <th className={`p-3 border-b border-r border-slate-200 dark:border-slate-800 w-10 text-center text-slate-400 ${STICKY_DRAG} ${BG_HEADER}`}>
+                <th className={`p-3 border-b border-r border-slate-200 dark:border-slate-800 w-[44px] min-w-[44px] max-w-[44px] text-center text-slate-400 ${STICKY_DRAG} ${BG_HEADER}`}>
                   <span className="material-symbols-outlined text-lg">drag_handle</span>
                 </th>
                 {/* col 2 — stage (frozen) */}
-                <th className={`p-3 border-b border-r border-slate-200 dark:border-slate-800 font-bold uppercase text-[10px] tracking-widest text-slate-500 w-48 ${STICKY_STAGE} ${BG_HEADER}`}>
+                <th className={`p-3 border-b border-r border-slate-200 dark:border-slate-800 font-bold uppercase text-[10px] tracking-widest text-slate-500 w-[200px] min-w-[200px] max-w-[200px] ${STICKY_STAGE} ${BG_HEADER}`}>
                   Stage
                 </th>
                 {/* col 3 — material (frozen, last frozen → thicker right border) */}
-                <th className={`p-3 border-b font-bold uppercase text-[10px] tracking-widest text-slate-500 w-56 ${STICKY_MATERIAL} ${BG_HEADER} ${FREEZE_BORDER}`}>
+                <th className={`p-3 border-b font-bold uppercase text-[10px] tracking-widest text-slate-500 w-[240px] min-w-[240px] max-w-[240px] ${STICKY_MATERIAL} ${BG_HEADER} ${FREEZE_BORDER}`}>
                   Material
                 </th>
                 {/* Formula columns — scrollable */}
-                {formulas.map(f => (
-                  <th key={f.id} className="p-3 border-b border-r border-slate-200 dark:border-slate-800 font-bold uppercase text-[10px] tracking-widest text-slate-500 min-w-[200px]">
-                    <div className="flex items-center justify-between">
-                      <span>{f.name}</span>
-                      <div className="flex items-center">
+                {formulas.map(f => {
+                  const isDuplicate = renamingFormulaId === f.id &&
+                    formulas.some(other => other.id !== f.id && other.name.trim().toLowerCase() === f.name.trim().toLowerCase())
+                  return (
+                    <th key={f.id} className="p-3 border-b border-r border-slate-200 dark:border-slate-800 min-w-[200px] align-middle">
+                      {/* ── Name row ── */}
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="text"
+                          value={f.name}
+                          onFocus={() => setRenamingFormulaId(f.id)}
+                          onBlur={() => setRenamingFormulaId(null)}
+                          onChange={e => renameFormula(f.id, e.target.value)}
+                          className={`flex-1 min-w-0 text-[11px] font-bold uppercase tracking-widest bg-transparent border-b focus:outline-none py-0.5 transition-colors ${isDuplicate
+                            ? 'border-red-400 text-red-600 focus:border-red-500'
+                            : 'border-transparent text-slate-600 dark:text-slate-300 focus:border-primary'
+                            }`}
+                        />
+                        {/* Settings popover trigger */}
+                        <div className="relative shrink-0">
+                          <button
+                            onClick={() => setOpenFormulaSettings(prev => prev === f.id ? null : f.id)}
+                            className={`p-0.5 rounded transition-colors ${openFormulaSettings === f.id
+                              ? 'text-primary bg-primary/10'
+                              : 'text-slate-300 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800'
+                              }`}
+                            title="Formula settings"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">tune</span>
+                          </button>
+                          {/* Popover panel */}
+                          {openFormulaSettings === f.id && (
+                            <div className="absolute right-0 top-full mt-1 z-50 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-3 space-y-3">
+                              {/* Scale (only when individual scales on) */}
+                              {useIndividualScales && (
+                                <div>
+                                  <label className="text-[9px] uppercase font-bold text-slate-400 tracking-wider block mb-1">Scale</label>
+                                  <input
+                                    type="number"
+                                    value={f.scale}
+                                    min={1}
+                                    onChange={e => setFormulaScale(f.id, e.target.value)}
+                                    className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 focus:ring-primary focus:ring-1 font-medium text-slate-700 dark:text-slate-200"
+                                  />
+                                </div>
+                              )}
+                              {/* Stage inclusion */}
+                              {stages.length > 0 && (
+                                <div>
+                                  <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-1.5">Include stages</p>
+                                  <div className="space-y-1">
+                                    {stages.map(s => (
+                                      <label key={s.id} className="flex items-center gap-2 cursor-pointer group">
+                                        <input
+                                          type="checkbox"
+                                          checked={f.includedStageIds.has(s.id)}
+                                          onChange={() => toggleFormulaStage(f.id, s.id)}
+                                          className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary w-3 h-3"
+                                        />
+                                        <span className="text-[11px] text-slate-600 dark:text-slate-300 group-hover:text-slate-800 truncate">{s.name}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {!useIndividualScales && stages.length === 0 && (
+                                <p className="text-[10px] text-slate-400 italic">Add stages to configure inclusion.</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
                         {formulas.length > 1 && (
                           <button
                             onClick={() => removeFormula(f.id)}
-                            className="text-slate-300 hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"
+                            className="text-slate-300 hover:text-red-500 p-0.5 rounded hover:bg-red-50 transition-colors shrink-0"
                             title="Remove formula"
                           >
-                            <span className="material-symbols-outlined text-[15px]">close</span>
+                            <span className="material-symbols-outlined text-[14px]">close</span>
                           </button>
                         )}
-                        <button className="text-slate-400 hover:text-primary p-1 rounded hover:bg-slate-100">
-                          <span className="material-symbols-outlined text-[18px]">more_vert</span>
-                        </button>
                       </div>
-                    </div>
-                  </th>
-                ))}
+                      {/* Duplicate alert */}
+                      {isDuplicate && (
+                        <p className="text-[10px] text-red-500 flex items-center gap-1 mt-1">
+                          <span className="material-symbols-outlined text-[12px]">error</span>
+                          Name already used
+                        </p>
+                      )}
+                    </th>
+                  )
+                })}
                 {/* Add formula column */}
                 <th className="p-3 border-b border-slate-200 dark:border-slate-800 w-12 text-center">
                   <button
@@ -416,11 +549,11 @@ export default function MaterialsFormulation() {
                         {stage.materials.length === 0 ? (
                           <tr className="border-b border-slate-200 dark:border-slate-800">
                             {/* drag — frozen */}
-                            <td className={`p-3 border-r border-slate-200 dark:border-slate-800 text-center align-top ${STICKY_DRAG} ${BG_STAGE}`}>
+                            <td className={`p-3 border-r border-slate-200 dark:border-slate-800 text-center align-top w-[44px] min-w-[44px] max-w-[44px] ${STICKY_DRAG} ${BG_STAGE}`}>
                               <span className="material-symbols-outlined text-slate-300 text-lg cursor-grab">drag_indicator</span>
                             </td>
                             {/* stage — frozen */}
-                            <td className={`p-3 border-r border-slate-200 dark:border-slate-800 align-top ${STICKY_STAGE} ${BG_STAGE}`}>
+                            <td className={`p-3 border-r border-slate-200 dark:border-slate-800 align-top w-[200px] min-w-[200px] max-w-[200px] ${STICKY_STAGE} ${BG_STAGE}`}>
                               <div className="flex flex-col gap-2">
                                 <input
                                   type="text"
@@ -437,7 +570,7 @@ export default function MaterialsFormulation() {
                               </div>
                             </td>
                             {/* material col — frozen, colSpan covers formula area too since no materials yet */}
-                            <td colSpan={formulas.length + 2} className={`p-4 text-slate-400 text-xs italic ${STICKY_MATERIAL} ${BG_MATERIAL} ${FREEZE_BORDER}`}>
+                            <td colSpan={formulas.length + 2} className={`p-4 text-slate-400 text-xs italic w-[240px] min-w-[240px] ${STICKY_MATERIAL} ${BG_MATERIAL} ${FREEZE_BORDER}`}>
                               No materials added.{' '}
                               <button
                                 onClick={() => addMaterial(stage.id)}
@@ -456,14 +589,14 @@ export default function MaterialsFormulation() {
                                     {/* drag — frozen, rowSpan covers all material rows + add-material row */}
                                     <td
                                       rowSpan={spanCount}
-                                      className={`p-3 border-r border-slate-200 dark:border-slate-800 text-center align-top ${STICKY_DRAG} ${BG_STAGE}`}
+                                      className={`p-3 border-r border-slate-200 dark:border-slate-800 text-center align-top w-[44px] min-w-[44px] max-w-[44px] ${STICKY_DRAG} ${BG_STAGE}`}
                                     >
                                       <span className="material-symbols-outlined text-slate-300 text-lg cursor-grab">drag_indicator</span>
                                     </td>
                                     {/* stage — frozen, rowSpan */}
                                     <td
                                       rowSpan={spanCount}
-                                      className={`p-3 border-r border-slate-200 dark:border-slate-800 align-top ${STICKY_STAGE} ${BG_STAGE}`}
+                                      className={`p-3 border-r border-slate-200 dark:border-slate-800 align-top w-[200px] min-w-[200px] max-w-[200px] ${STICKY_STAGE} ${BG_STAGE}`}
                                     >
                                       <div className="flex flex-col gap-2">
                                         <input
@@ -483,7 +616,7 @@ export default function MaterialsFormulation() {
                                   </>
                                 )}
                                 {/* material — frozen (col 3) */}
-                                <td className={`p-3 align-top ${STICKY_MATERIAL} ${BG_MATERIAL} ${FREEZE_BORDER}`}>
+                                <td className={`p-3 align-top w-[240px] min-w-[240px] max-w-[240px] ${STICKY_MATERIAL} ${BG_MATERIAL} ${FREEZE_BORDER}`}>
                                   <div className="flex items-center gap-2">
                                     <select
                                       value={mat.materialCode}
@@ -502,43 +635,134 @@ export default function MaterialsFormulation() {
                                     </button>
                                   </div>
                                 </td>
-                                {/* Formula cells — scrollable */}
                                 {formulas.map(f => {
-                                  const fv = mat.formulaValues?.[f.id] ?? { qty: '', uom: 'g' }
+                                  const fv = mat.formulaValues?.[f.id] ?? { qty: '', uom: 'g', included: true, batchId: null }
+                                  const isIncluded = fv.included !== false
+                                  const isStageIncluded = f.includedStageIds.size === 0 || f.includedStageIds.has(stage.id)
                                   const conversion = convertToNumerator(fv.qty, fv.uom, numeratorUom)
                                   const sameUom = fv.uom === numeratorUom
+                                  const matBatches = MATERIAL_BATCHES.filter(b => b.materialCode === mat.materialCode)
+                                  const selectedBatch = MATERIAL_BATCHES.find(b => b.id === fv.batchId)
+                                  const cellKey = `${stage.id}-${mat.id}-${f.id}`
+                                  const isCellOpen = openCellSettings === cellKey
+
+                                  // ── Stage-excluded cell — rendered as a muted placeholder ──
+                                  if (!isStageIncluded) {
+                                    return (
+                                      <td
+                                        key={f.id}
+                                        className="p-2.5 border-r border-slate-200 dark:border-slate-800 align-middle"
+                                        style={{
+                                          background: 'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(148,163,184,0.12) 4px, rgba(148,163,184,0.12) 8px)',
+                                        }}
+                                      >
+                                        <div className="flex items-center justify-center gap-1 py-1">
+                                          <span className="material-symbols-outlined text-[13px] text-slate-300">block</span>
+                                          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-300">Stage excluded</span>
+                                        </div>
+                                      </td>
+                                    )
+                                  }
 
                                   return (
-                                    <td key={f.id} className="p-3 border-r border-slate-200 dark:border-slate-800 align-top">
-                                      <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded overflow-hidden bg-white dark:bg-slate-800">
-                                        <input
-                                          type="number"
-                                          value={fv.qty}
-                                          onChange={(e) => updateFormulaValue(stage.id, mat.id, f.id, 'qty', e.target.value)}
-                                          placeholder="0"
-                                          className="w-2/3 border-none bg-transparent text-xs py-1.5 px-2 focus:ring-0"
-                                        />
-                                        <select
-                                          value={fv.uom}
-                                          onChange={(e) => updateFormulaValue(stage.id, mat.id, f.id, 'uom', e.target.value)}
-                                          className="w-1/3 border-l border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-[10px] py-1.5 focus:ring-0 text-slate-500"
-                                        >
-                                          {UOM_OPTIONS.map(u => <option key={u}>{u}</option>)}
-                                        </select>
+                                    <td
+                                      key={f.id}
+                                      className={`p-2.5 border-r border-slate-200 dark:border-slate-800 align-top ${isIncluded ? '' : 'opacity-50'}`}
+                                    >
+                                      {/* Qty + UOM + settings button row */}
+                                      <div className="flex items-center gap-1">
+                                        <div className={`flex flex-1 items-center border rounded overflow-hidden ${isIncluded
+                                          ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                                          : 'border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900'
+                                          }`}>
+                                          <input
+                                            type="number"
+                                            value={fv.qty}
+                                            onChange={e => updateFormulaValue(stage.id, mat.id, f.id, 'qty', e.target.value)}
+                                            placeholder="0"
+                                            disabled={!isIncluded}
+                                            className="w-2/3 border-none bg-transparent text-xs py-1.5 px-2 focus:ring-0 disabled:cursor-not-allowed"
+                                          />
+                                          <select
+                                            value={fv.uom}
+                                            onChange={e => updateFormulaValue(stage.id, mat.id, f.id, 'uom', e.target.value)}
+                                            disabled={!isIncluded}
+                                            className="w-1/3 border-l border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-[10px] py-1.5 focus:ring-0 text-slate-500 disabled:cursor-not-allowed"
+                                          >
+                                            {UOM_OPTIONS.map(u => <option key={u}>{u}</option>)}
+                                          </select>
+                                        </div>
+                                        {/* Single settings button */}
+                                        <div className="relative shrink-0">
+                                          <button
+                                            onClick={() => setOpenCellSettings(isCellOpen ? null : cellKey)}
+                                            title="Cell settings"
+                                            className={`p-0.5 rounded transition-colors ${isCellOpen ? 'text-primary bg-primary/10'
+                                              : !isIncluded ? 'text-slate-300 hover:text-slate-500'
+                                                : selectedBatch ? 'text-sky-400 hover:text-sky-600'
+                                                  : 'text-slate-300 hover:text-slate-500'
+                                              }`}
+                                          >
+                                            <span className="material-symbols-outlined text-[15px]">settings</span>
+                                          </button>
+                                          {/* Popover */}
+                                          {isCellOpen && (
+                                            <div className="absolute right-0 top-full mt-1 z-50 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-3 space-y-3">
+                                              {/* Include / Exclude */}
+                                              <div>
+                                                <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-1.5">In total calculation</p>
+                                                <button
+                                                  onClick={() => updateFormulaValue(stage.id, mat.id, f.id, 'included', !isIncluded)}
+                                                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded border text-xs font-medium transition-colors ${isIncluded
+                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200'
+                                                    : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200'
+                                                    }`}
+                                                >
+                                                  <span className="material-symbols-outlined text-[14px]">{isIncluded ? 'check_circle' : 'cancel'}</span>
+                                                  {isIncluded ? 'Included' : 'Excluded'}
+                                                </button>
+                                              </div>
+                                              {/* Batch */}
+                                              <div>
+                                                <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider mb-1.5">Material batch</p>
+                                                <select
+                                                  value={fv.batchId ?? ''}
+                                                  onChange={e => updateFormulaValue(stage.id, mat.id, f.id, 'batchId', e.target.value || null)}
+                                                  className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-1 px-2 focus:ring-1 focus:ring-primary"
+                                                >
+                                                  <option value="">— No batch assigned —</option>
+                                                  {matBatches.map(b => (
+                                                    <option key={b.id} value={b.id}>{b.batchNo}</option>
+                                                  ))}
+                                                </select>
+                                                {selectedBatch && (
+                                                  <div className="mt-1.5 flex items-center gap-1.5">
+                                                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full border font-medium ${selectedBatch.qcStatus === 'Passed'
+                                                      ? 'bg-green-50 text-green-700 border-green-200'
+                                                      : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                                                      }`}>QC: {selectedBatch.qcStatus}</span>
+                                                    <span className="text-[9px] text-slate-400">exp {selectedBatch.expiryDate}</span>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
-                                      {fv.qty && !sameUom && (
-                                        conversion?.incompatible ? (
-                                          <p className="mt-1 text-[10px] text-red-500 flex items-center gap-1">
-                                            <span className="material-symbols-outlined text-[12px]">error</span>
-                                            Cannot convert {fv.uom} → {numeratorUom}
-                                          </p>
-                                        ) : conversion?.value != null ? (
-                                          <p className="mt-1 text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                            <span className="material-symbols-outlined text-[12px]">sync_alt</span>
-                                            ≈ {conversion.value} {numeratorUom}
-                                          </p>
-                                        ) : null
-                                      )}
+                                      {/* Status strip */}
+                                      <div className="mt-1 flex items-center gap-1.5 flex-wrap min-h-[14px]">
+                                        {!isIncluded && <span className="text-[9px] text-slate-400 italic">excluded</span>}
+                                        {selectedBatch && isIncluded && (
+                                          <span className="text-[9px] text-sky-500 font-medium truncate">{selectedBatch.batchNo}</span>
+                                        )}
+                                        {fv.qty && !sameUom && isIncluded && (
+                                          conversion?.incompatible
+                                            ? <span className="text-[9px] text-red-500">⚠ unit mismatch</span>
+                                            : conversion?.value != null
+                                              ? <span className="text-[9px] text-emerald-600">≈ {conversion.value} {numeratorUom}</span>
+                                              : null
+                                        )}
+                                      </div>
                                     </td>
                                   )
                                 })}
@@ -548,7 +772,7 @@ export default function MaterialsFormulation() {
                             ))}
                             {/* Add Material row — drag+stage covered by rowSpan; material cell is sticky */}
                             <tr className="border-b border-slate-200 dark:border-slate-800">
-                              <td className={`px-3 py-2 ${STICKY_MATERIAL} ${BG_MATERIAL} ${FREEZE_BORDER}`}>
+                              <td className={`px-3 py-2 w-[240px] min-w-[240px] max-w-[240px] ${STICKY_MATERIAL} ${BG_MATERIAL} ${FREEZE_BORDER}`}>
                                 <button
                                   onClick={() => addMaterial(stage.id)}
                                   className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 text-[11px] font-bold uppercase tracking-wider"
@@ -563,9 +787,10 @@ export default function MaterialsFormulation() {
                       </Fragment>
                     )
                   })}
-                  {/* Add Stage row */}
+                  {/* Add Stage row — pinned to frozen columns, never scrolls */}
                   <tr>
-                    <td colSpan={totalCols} className="px-3 py-2.5">
+                    <td className={`p-0 w-[44px] min-w-[44px] max-w-[44px] ${STICKY_DRAG} ${BG_MATERIAL}`} />
+                    <td colSpan={2} className={`px-3 py-2.5 w-[440px] min-w-[440px] max-w-[440px] ${STICKY_STAGE} ${BG_MATERIAL} ${FREEZE_BORDER}`}>
                       <button
                         onClick={addStage}
                         className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 text-[11px] font-bold uppercase tracking-wider"
@@ -573,6 +798,7 @@ export default function MaterialsFormulation() {
                         <span className="material-symbols-outlined text-[14px]">add_circle</span> Add Stage
                       </button>
                     </td>
+                    <td colSpan={formulas.length + 1} />
                   </tr>
                 </>
               )}
@@ -582,7 +808,7 @@ export default function MaterialsFormulation() {
                 {/* Spans drag + stage + material — sticky at left-0 with freeze border */}
                 <td
                   colSpan={3}
-                  className={`p-3 text-right border-t uppercase text-[10px] tracking-widest text-slate-500 ${STICKY_DRAG} ${BG_HEADER} ${FREEZE_BORDER}`}
+                  className={`p-3 text-right border-t uppercase text-[10px] tracking-widest text-slate-500 w-[484px] min-w-[484px] max-w-[484px] ${STICKY_DRAG} ${BG_HEADER} ${FREEZE_BORDER}`}
                 >
                   Theoretical Total
                 </td>
@@ -610,7 +836,7 @@ export default function MaterialsFormulation() {
               </span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
+              <table className="min-w-max w-full text-xs text-left">
                 <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 uppercase text-[9px] tracking-wider">
                   <tr>
                     <th className="px-4 py-2 border-r border-slate-100 dark:border-slate-700">Type</th>
@@ -632,19 +858,25 @@ export default function MaterialsFormulation() {
 
                     return formulas.map(f => {
                       const fv = m.formulaValues?.[f.id]
+                      const isIncluded = fv?.included !== false
                       const conv = convertToNumerator(fv?.qty, fv?.uom, numeratorUom)
                       const sameUom = fv?.uom === numeratorUom
+                      // Resolve selected batch
+                      const selectedBatch = MATERIAL_BATCHES.find(b => b.id === fv?.batchId)
 
                       // Raw amount in numeratorUom
                       let rawAmt = null
-                      if (fv?.qty) {
+                      if (fv?.qty && isIncluded) {
                         if (sameUom) rawAmt = parseFloat(fv.qty)
                         else if (conv?.value) rawAmt = conv.value
                       }
 
-                      // Quantity = rawAmt × scale
+                      // Quantity = rawAmt × (per-formula scale or global scale)
+                      const effectiveScale = useIndividualScales ? (f.scale ?? 1) : scale
                       let qtyDisplay
-                      if (rawAmt == null) {
+                      if (!isIncluded) {
+                        qtyDisplay = <span className="text-slate-300 italic text-[10px]">Excluded</span>
+                      } else if (rawAmt == null) {
                         qtyDisplay = <span className="text-slate-400">—</span>
                       } else if (conv?.incompatible) {
                         qtyDisplay = (
@@ -653,12 +885,27 @@ export default function MaterialsFormulation() {
                           </span>
                         )
                       } else {
-                        const scaled = parseFloat((rawAmt * scale).toPrecision(6))
+                        const scaled = parseFloat((rawAmt * effectiveScale).toPrecision(6))
                         qtyDisplay = `${scaled} ${numeratorUom}`
                       }
 
+                      // Batch QC badge
+                      let batchCell
+                      if (selectedBatch) {
+                        const qcPassed = selectedBatch.qcStatus === 'Passed'
+                        batchCell = (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-mono text-[10px] text-slate-600 dark:text-slate-300">{selectedBatch.batchNo}</span>
+                            <span className={`inline-flex w-fit px-1.5 py-0.5 rounded-full text-[9px] font-medium border ${qcPassed ? 'bg-green-100 text-green-700 border-green-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                              }`}>{selectedBatch.qcStatus}</span>
+                          </div>
+                        )
+                      } else {
+                        batchCell = <span className="text-slate-400 text-[10px] italic">Not Assigned</span>
+                      }
+
                       return (
-                        <tr key={`${m.id}-${f.id}`}>
+                        <tr key={`${m.id}-${f.id}`} className={!isIncluded ? 'opacity-50' : ''}>
                           {/* Type */}
                           <td className="px-4 py-2 border-r border-slate-100 dark:border-slate-700">
                             {m.material?.type
@@ -683,12 +930,7 @@ export default function MaterialsFormulation() {
                           </td>
                           {/* Batch QC No */}
                           <td className="px-4 py-2 border-r border-slate-100 dark:border-slate-700">
-                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${m.material?.qc === 'Passed'
-                                ? 'bg-green-100 text-green-700 border-green-200'
-                                : 'bg-yellow-100 text-yellow-700 border-yellow-200'
-                              }`}>
-                              {m.material?.qc ?? '—'}
-                            </span>
+                            {batchCell}
                           </td>
                           {/* Quantity = per-formula amount × scale */}
                           <td className="px-4 py-2 text-right font-medium dark:text-slate-200 border-r border-slate-100 dark:border-slate-700">
@@ -719,7 +961,7 @@ export default function MaterialsFormulation() {
             </div>
           </div>
         )}
-      </div>
+      </div>}
     </div>
   )
 }
