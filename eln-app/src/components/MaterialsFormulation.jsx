@@ -1,4 +1,4 @@
-import { useState, Fragment } from 'react'
+import { useState, useRef, Fragment } from 'react'
 
 const MASTER_MATERIALS = [
   { code: 'MAT-001', name: 'Purified Water, USP Grade', type: 'MATERIAL', qc: 'Passed' },
@@ -71,23 +71,108 @@ const STICKY_MATERIAL = 'sticky left-[244px] z-10'
 const BG_HEADER = 'bg-slate-50 dark:bg-slate-900'
 const BG_STAGE = 'bg-slate-50 dark:bg-slate-900'
 const BG_MATERIAL = 'bg-white dark:bg-slate-950'
-// Thicker right border on last frozen column as a visual freeze indicator
-const FREEZE_BORDER = 'border-r-2 border-r-slate-300 dark:border-r-slate-500/50'
+// Divider on last frozen column as a visual freeze indicator
+const FREEZE_BORDER = 'border-r border-r-slate-300 dark:border-r-slate-600 [box-shadow:1px_0_0_0_#cbd5e1] dark:[box-shadow:1px_0_0_0_#475569]'
 
-export default function MaterialsFormulation() {
+export default function MaterialsFormulation({ stages, setStages, formulas, setFormulas }) {
   const [isSectionOpen, setIsSectionOpen] = useState(true)
   const [numeratorUom, setNumeratorUom] = useState('g')
   const [useIndividualScales, setUseIndividualScales] = useState(false)
   const [denominatorUom, setDenominatorUom] = useState('Ampoule')
   const [scale, setScale] = useState(100)
-  const [formulas, setFormulas] = useState([{ id: 1, name: 'Formula 1', scale: 100, includedStageIds: new Set() }])
   // Track which formula's rename input is currently focused (for inline duplicate alert)
   const [renamingFormulaId, setRenamingFormulaId] = useState(null)
   const [openFormulaSettings, setOpenFormulaSettings] = useState(null)
   // key: `${stageId}-${matId}-${formulaId}`
   const [openCellSettings, setOpenCellSettings] = useState(null)
-  const [stages, setStages] = useState([])
   const [isDirty, setIsDirty] = useState(false)
+  const [lastSavedAt, setLastSavedAt] = useState(null)
+  const [isFullScreen, setIsFullScreen] = useState(false)
+  const [dragStageId, setDragStageId] = useState(null)
+  const [dragOverStageId, setDragOverStageId] = useState(null)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [savedTemplates, setSavedTemplates] = useState([
+    {
+      id: 9001,
+      name: 'Hand Sanitizer Gel (WHO)',
+      savedAt: '3/10/2026, 09:15 AM',
+      stageCount: 2,
+      materialCount: 4,
+      numeratorUom: 'mL',
+      denominatorUom: 'Bottle',
+      scale: 1000,
+      useIndividualScales: false,
+      formulas: [{ id: 901, name: 'Formula 1', scale: 1000, includedStageIds: new Set([901, 902]) }],
+      stages: [
+        {
+          id: 901, name: 'Aqueous Phase',
+          materials: [
+            { id: 9001, materialCode: 'MAT-001', formulaValues: { 901: { qty: '725', uom: 'mL', included: true, batchId: null } } },
+            { id: 9002, materialCode: 'MAT-042', formulaValues: { 901: { qty: '14.5', uom: 'mL', included: true, batchId: null } } },
+          ],
+        },
+        {
+          id: 902, name: 'Active Phase',
+          materials: [
+            { id: 9003, materialCode: 'MAT-002', formulaValues: { 901: { qty: '833', uom: 'mL', included: true, batchId: null } } },
+            { id: 9004, materialCode: 'MAT-003', formulaValues: { 901: { qty: '41.7', uom: 'mL', included: true, batchId: null } } },
+          ],
+        },
+      ],
+    },
+    {
+      id: 9002,
+      name: 'Isotonic Saline 0.9%',
+      savedAt: '3/15/2026, 02:30 PM',
+      stageCount: 1,
+      materialCount: 2,
+      numeratorUom: 'g',
+      denominatorUom: 'Ampoule',
+      scale: 100,
+      useIndividualScales: false,
+      formulas: [{ id: 902, name: 'Formula 1', scale: 100, includedStageIds: new Set([903]) }],
+      stages: [
+        {
+          id: 903, name: 'Dissolution',
+          materials: [
+            { id: 9005, materialCode: 'MAT-055', formulaValues: { 902: { qty: '0.9', uom: 'g', included: true, batchId: null } } },
+            { id: 9006, materialCode: 'MAT-001', formulaValues: { 902: { qty: '99.1', uom: 'mL', included: true, batchId: null } } },
+          ],
+        },
+      ],
+    },
+    {
+      id: 9003,
+      name: 'Tablet Core Blend',
+      savedAt: '3/22/2026, 11:00 AM',
+      stageCount: 2,
+      materialCount: 3,
+      numeratorUom: 'g',
+      denominatorUom: 'Tablet',
+      scale: 500,
+      useIndividualScales: false,
+      formulas: [{ id: 903, name: 'Formula 1', scale: 500, includedStageIds: new Set([904, 905]) }],
+      stages: [
+        {
+          id: 904, name: 'Wet Granulation',
+          materials: [
+            { id: 9007, materialCode: 'MAT-061', formulaValues: { 903: { qty: '450', uom: 'g', included: true, batchId: null } } },
+            { id: 9008, materialCode: 'MAT-001', formulaValues: { 903: { qty: '80', uom: 'mL', included: true, batchId: null } } },
+          ],
+        },
+        {
+          id: 905, name: 'Lubrication',
+          materials: [
+            { id: 9009, materialCode: 'MAT-055', formulaValues: { 903: { qty: '5', uom: 'g', included: true, batchId: null } } },
+          ],
+        },
+      ],
+    },
+  ])
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false)
+  const [showApplyTemplate, setShowApplyTemplate] = useState(false)
+  const [templateNameInput, setTemplateNameInput] = useState('')
+  const [applyConfirmId, setApplyConfirmId] = useState(null)
   const [dismissedAlerts, setDismissedAlerts] = useState(new Set())
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -204,8 +289,87 @@ export default function MaterialsFormulation() {
         : s
     ))
 
-  const handleSave = () => setIsDirty(false)
-  const handleReset = () => { setStages([]); setIsDirty(false) }
+  const handleSave = () => {
+    setIsDirty(false)
+    setDismissedAlerts(new Set())
+    setLastSavedAt(new Date())
+  }
+  const handleReset = () => {
+    setStages([])
+    setIsDirty(false)
+    setDismissedAlerts(new Set())
+    setLastSavedAt(null)
+  }
+
+  // ── Stage drag-to-reorder ─────────────────────────────────────────────────
+
+  const handleStageDragStart = (e, stageId) => {
+    setDragStageId(stageId)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+  const handleStageDragOver = (e, stageId) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (stageId !== dragStageId) setDragOverStageId(stageId)
+  }
+  const handleStageDrop = (e, targetStageId) => {
+    e.preventDefault()
+    if (!dragStageId || dragStageId === targetStageId) return
+    mutate(prev => {
+      const from = prev.findIndex(s => s.id === dragStageId)
+      const to = prev.findIndex(s => s.id === targetStageId)
+      const next = [...prev]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    })
+    setDragStageId(null)
+    setDragOverStageId(null)
+  }
+  const handleStageDragEnd = () => {
+    setDragStageId(null)
+    setDragOverStageId(null)
+  }
+
+  // ── Formula templates ─────────────────────────────────────────────────────
+
+  const handleSaveTemplate = () => {
+    const name = templateNameInput.trim()
+    if (!name) return
+    setSavedTemplates(prev => [...prev, {
+      id: Date.now(),
+      name,
+      savedAt: new Date().toLocaleString(),
+      stageCount: stages.length,
+      materialCount: stages.reduce((n, s) => n + s.materials.length, 0),
+      stages: stages.map(s => ({ ...s, materials: s.materials.map(m => ({ ...m, formulaValues: { ...m.formulaValues } })) })),
+      formulas: formulas.map(f => ({ ...f, includedStageIds: new Set(f.includedStageIds) })),
+      numeratorUom,
+      denominatorUom,
+      scale,
+      useIndividualScales,
+    }])
+    setTemplateNameInput('')
+    setShowSaveTemplate(false)
+  }
+
+  const handleApplyTemplate = (template) => {
+    if (template.stages.length > 0) {
+      nextStageId = Math.max(nextStageId, ...template.stages.map(s => s.id)) + 1
+      const matIds = template.stages.flatMap(s => s.materials.map(m => m.id))
+      if (matIds.length > 0) nextMatId = Math.max(nextMatId, ...matIds) + 1
+    }
+    if (template.formulas.length > 0) nextFormulaId = Math.max(nextFormulaId, ...template.formulas.map(f => f.id)) + 1
+    setStages(template.stages.map(s => ({ ...s, materials: s.materials.map(m => ({ ...m, formulaValues: { ...m.formulaValues } })) })))
+    setFormulas(template.formulas.map(f => ({ ...f, includedStageIds: new Set(f.includedStageIds) })))
+    setNumeratorUom(template.numeratorUom)
+    setDenominatorUom(template.denominatorUom)
+    setScale(template.scale)
+    setUseIndividualScales(template.useIndividualScales)
+    setIsDirty(true)
+    setApplyConfirmId(null)
+    setShowApplyTemplate(false)
+  }
 
   // ── Derived data ──────────────────────────────────────────────────────────
 
@@ -256,20 +420,6 @@ export default function MaterialsFormulation() {
       type: 'error',
       message: `One or more materials use a unit dimension that cannot be converted to "${numeratorUom}". Please correct the UOM selections.`,
     },
-    isDirty && {
-      id: 'unsaved-changes',
-      type: 'warning',
-      message: 'Unsaved formulation changes — save to enable procedure editing.',
-      actions: [
-        { label: 'Save', onClick: handleSave },
-        { label: 'Reset', onClick: handleReset, secondary: true },
-      ],
-    },
-    isDirty && {
-      id: 'template-copy-blocked',
-      type: 'info',
-      message: 'Save or reset your formulation changes before copying formulas from templates.',
-    },
   ].filter(Boolean).filter(a => !dismissedAlerts.has(a.id))
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -277,37 +427,89 @@ export default function MaterialsFormulation() {
   const totalCols = 3 + formulas.length + 1
 
   return (
-    <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      {/* Header — "+ Formula" removed; use the + icon at the table's right edge instead */}
+    <div className={`bg-surface-light dark:bg-surface-dark border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden ${
+      isFullScreen ? 'fixed inset-0 z-50 rounded-none flex flex-col' : 'rounded-xl'
+    }`}>
+      {/* Header */}
       <div
-        className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/20 cursor-pointer select-none"
-        onClick={() => setIsSectionOpen(prev => !prev)}
+        className={`p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900 select-none ${
+          isFullScreen ? 'shrink-0' : 'sticky top-0 z-20 cursor-pointer'
+        }`}
+        onClick={() => !isFullScreen && setIsSectionOpen(prev => !prev)}
       >
         <h2 className="text-md font-semibold text-slate-900 dark:text-white flex items-center gap-2">
           <span className="material-symbols-outlined text-primary">biotech</span>
           Materials &amp; Formulation
+          {isDirty && !dismissedAlerts.has('unsaved-changes') && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-500 ml-1">
+              <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>warning</span>
+              Unsaved changes
+              <button onClick={e => { e.stopPropagation(); dismissAlert('unsaved-changes') }} className="opacity-40 hover:opacity-100 transition-opacity leading-none">
+                <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>close</span>
+              </button>
+            </span>
+          )}
+          {lastSavedAt && (
+            <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-500 ml-1">
+              <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>check_circle</span>
+              Latest saved at {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          )}
         </h2>
         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-          {isDirty && isSectionOpen && (
-            <button
-              onClick={handleSave}
-              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
-            >
-              <span className="material-symbols-outlined text-[15px]">save</span> Save
-            </button>
+          {isFullScreen ? (
+            <>
+              <button
+                onClick={() => setIsFullScreen(false)}
+                className="px-4 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { handleSave(); setIsFullScreen(false) }}
+                className="px-5 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 shadow-sm transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setIsFullScreen(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors rounded"
+                title="Exit full screen"
+              >
+                <span className="material-symbols-outlined text-[20px]">close_fullscreen</span>
+              </button>
+            </>
+          ) : (
+            <>
+              {isSectionOpen && (
+                <button
+                  onClick={handleSave}
+                  className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[15px]">save</span> Save
+                </button>
+              )}
+              <button
+                onClick={() => setIsFullScreen(true)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded"
+                title="Open in full screen"
+              >
+                <span className="material-symbols-outlined text-[20px]">open_in_full</span>
+              </button>
+              <button
+                onClick={() => setIsSectionOpen(prev => !prev)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded"
+                title={isSectionOpen ? 'Collapse' : 'Expand'}
+              >
+                <span
+                  className="material-symbols-outlined text-[20px] transition-transform duration-200"
+                  style={{ transform: isSectionOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+                >
+                  expand_more
+                </span>
+              </button>
+            </>
           )}
-          <button
-            onClick={() => setIsSectionOpen(prev => !prev)}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded"
-            title={isSectionOpen ? 'Collapse' : 'Expand'}
-          >
-            <span
-              className="material-symbols-outlined text-[20px] transition-transform duration-200"
-              style={{ transform: isSectionOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}
-            >
-              expand_more
-            </span>
-          </button>
         </div>
       </div>
 
@@ -343,7 +545,7 @@ export default function MaterialsFormulation() {
         </div>
       )}
 
-      {isSectionOpen && <div className="p-6 space-y-6">
+      {(isSectionOpen || isFullScreen) && <div className={`p-6 space-y-6 ${isFullScreen ? 'flex-1 overflow-y-auto' : ''}`}>
         {/* UOM Config — compact fraction bar */}
         <div className="bg-slate-50 dark:bg-slate-900/40 px-4 py-3 rounded-lg">
           <div className="flex flex-wrap items-center gap-2">
@@ -398,6 +600,28 @@ export default function MaterialsFormulation() {
               </div>
               <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Individual scales</span>
             </label>
+            {/* Divider */}
+            <span className="text-slate-200 dark:text-slate-700 mx-1">|</span>
+            {/* Formula template actions */}
+            <button
+              onClick={() => { setTemplateNameInput(''); setShowSaveTemplate(true) }}
+              disabled={stages.length === 0}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title="Save current formula as a template"
+            >
+              <span className="material-symbols-outlined text-[14px]">bookmark_add</span> Save Formula
+            </button>
+            <button
+              onClick={() => { setApplyConfirmId(null); setShowApplyTemplate(true) }}
+              disabled={savedTemplates.length === 0}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title="Apply a saved formula template"
+            >
+              <span className="material-symbols-outlined text-[14px]">bookmarks</span> Apply Formula
+              {savedTemplates.length > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold">{savedTemplates.length}</span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -547,10 +771,19 @@ export default function MaterialsFormulation() {
                     return (
                       <Fragment key={stage.id}>
                         {stage.materials.length === 0 ? (
-                          <tr className="border-b border-slate-200 dark:border-slate-800">
+                          <tr
+                            className={`border-b border-slate-200 dark:border-slate-800 transition-colors ${dragOverStageId === stage.id && dragStageId !== stage.id ? 'bg-primary/5 outline outline-2 -outline-offset-2 outline-primary/30' : ''} ${dragStageId === stage.id ? 'opacity-40' : ''}`}
+                            onDragOver={(e) => handleStageDragOver(e, stage.id)}
+                            onDrop={(e) => handleStageDrop(e, stage.id)}
+                          >
                             {/* drag — frozen */}
                             <td className={`p-3 border-r border-slate-200 dark:border-slate-800 text-center align-top w-[44px] min-w-[44px] max-w-[44px] ${STICKY_DRAG} ${BG_STAGE}`}>
-                              <span className="material-symbols-outlined text-slate-300 text-lg cursor-grab">drag_indicator</span>
+                              <span
+                                className="material-symbols-outlined text-slate-300 hover:text-slate-500 text-lg cursor-grab active:cursor-grabbing select-none"
+                                draggable
+                                onDragStart={(e) => handleStageDragStart(e, stage.id)}
+                                onDragEnd={handleStageDragEnd}
+                              >drag_indicator</span>
                             </td>
                             {/* stage — frozen */}
                             <td className={`p-3 border-r border-slate-200 dark:border-slate-800 align-top w-[200px] min-w-[200px] max-w-[200px] ${STICKY_STAGE} ${BG_STAGE}`}>
@@ -583,7 +816,12 @@ export default function MaterialsFormulation() {
                         ) : (
                           <>
                             {stage.materials.map((mat, matIdx) => (
-                              <tr key={mat.id} className="border-b border-slate-100 dark:border-slate-800">
+                              <tr
+                                key={mat.id}
+                                className={`border-b border-slate-100 dark:border-slate-800 transition-colors ${dragOverStageId === stage.id && dragStageId !== stage.id ? 'bg-primary/5' : ''} ${dragStageId === stage.id ? 'opacity-40' : ''}`}
+                                onDragOver={(e) => handleStageDragOver(e, stage.id)}
+                                onDrop={(e) => handleStageDrop(e, stage.id)}
+                              >
                                 {matIdx === 0 && (
                                   <>
                                     {/* drag — frozen, rowSpan covers all material rows + add-material row */}
@@ -591,7 +829,12 @@ export default function MaterialsFormulation() {
                                       rowSpan={spanCount}
                                       className={`p-3 border-r border-slate-200 dark:border-slate-800 text-center align-top w-[44px] min-w-[44px] max-w-[44px] ${STICKY_DRAG} ${BG_STAGE}`}
                                     >
-                                      <span className="material-symbols-outlined text-slate-300 text-lg cursor-grab">drag_indicator</span>
+                                      <span
+                                        className="material-symbols-outlined text-slate-300 hover:text-slate-500 text-lg cursor-grab active:cursor-grabbing select-none"
+                                        draggable
+                                        onDragStart={(e) => handleStageDragStart(e, stage.id)}
+                                        onDragEnd={handleStageDragEnd}
+                                      >drag_indicator</span>
                                     </td>
                                     {/* stage — frozen, rowSpan */}
                                     <td
@@ -667,13 +910,13 @@ export default function MaterialsFormulation() {
                                   return (
                                     <td
                                       key={f.id}
-                                      className={`p-2.5 border-r border-slate-200 dark:border-slate-800 align-top ${isIncluded ? '' : 'opacity-50'}`}
+                                      className="p-2.5 border-r border-slate-200 dark:border-slate-800 align-top"
                                     >
                                       {/* Qty + UOM + settings button row */}
                                       <div className="flex items-center gap-1">
-                                        <div className={`flex flex-1 items-center border rounded overflow-hidden ${isIncluded
+                                        <div className={`flex flex-1 items-center border rounded overflow-hidden transition-opacity ${isIncluded
                                           ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
-                                          : 'border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900'
+                                          : 'opacity-40 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900'
                                           }`}>
                                           <input
                                             type="number"
@@ -771,7 +1014,11 @@ export default function MaterialsFormulation() {
                               </tr>
                             ))}
                             {/* Add Material row — drag+stage covered by rowSpan; material cell is sticky */}
-                            <tr className="border-b border-slate-200 dark:border-slate-800">
+                            <tr
+                              className={`border-b border-slate-200 dark:border-slate-800 transition-colors ${dragOverStageId === stage.id && dragStageId !== stage.id ? 'bg-primary/5' : ''} ${dragStageId === stage.id ? 'opacity-40' : ''}`}
+                              onDragOver={(e) => handleStageDragOver(e, stage.id)}
+                              onDrop={(e) => handleStageDrop(e, stage.id)}
+                            >
                               <td className={`px-3 py-2 w-[240px] min-w-[240px] max-w-[240px] ${STICKY_MATERIAL} ${BG_MATERIAL} ${FREEZE_BORDER}`}>
                                 <button
                                   onClick={() => addMaterial(stage.id)}
@@ -791,12 +1038,22 @@ export default function MaterialsFormulation() {
                   <tr>
                     <td className={`p-0 w-[44px] min-w-[44px] max-w-[44px] ${STICKY_DRAG} ${BG_MATERIAL}`} />
                     <td colSpan={2} className={`px-3 py-2.5 w-[440px] min-w-[440px] max-w-[440px] ${STICKY_STAGE} ${BG_MATERIAL} ${FREEZE_BORDER}`}>
-                      <button
-                        onClick={addStage}
-                        className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 text-[11px] font-bold uppercase tracking-wider"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">add_circle</span> Add Stage
-                      </button>
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={addStage}
+                          className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 text-[11px] font-bold uppercase tracking-wider"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">add_circle</span> Add Stage
+                        </button>
+                        {stages.length > 0 && (
+                          <button
+                            onClick={() => setShowResetConfirm(true)}
+                            className="inline-flex items-center gap-1.5 text-red-400 hover:text-red-600 text-[11px] font-bold uppercase tracking-wider"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">delete_sweep</span> Reset All
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td colSpan={formulas.length + 1} />
                   </tr>
@@ -905,7 +1162,7 @@ export default function MaterialsFormulation() {
                       }
 
                       return (
-                        <tr key={`${m.id}-${f.id}`} className={!isIncluded ? 'opacity-50' : ''}>
+                        <tr key={`${m.id}-${f.id}`} className={!isIncluded ? 'text-slate-400' : ''}>
                           {/* Type */}
                           <td className="px-4 py-2 border-r border-slate-100 dark:border-slate-700">
                             {m.material?.type
@@ -962,6 +1219,158 @@ export default function MaterialsFormulation() {
           </div>
         )}
       </div>}
+
+      {/* Save Formula dialog */}
+      {showSaveTemplate && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowSaveTemplate(false)} />
+          <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-sm p-6 flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined text-primary text-[22px] shrink-0 mt-0.5">bookmark_add</span>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Save Formula</h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Saves the current stages, materials, and formula values as a reusable template.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Template name</label>
+              <input
+                type="text"
+                autoFocus
+                value={templateNameInput}
+                onChange={e => setTemplateNameInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSaveTemplate()}
+                placeholder="e.g. Hydrogel Base v1"
+                className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-1 focus:ring-primary focus:outline-none"
+              />
+              <p className="text-[10px] text-slate-400">{stages.length} stage{stages.length !== 1 ? 's' : ''} · {stages.reduce((n, s) => n + s.materials.length, 0)} material{stages.reduce((n, s) => n + s.materials.length, 0) !== 1 ? 's' : ''} · {formulas.length} formula column{formulas.length !== 1 ? 's' : ''}</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowSaveTemplate(false)}
+                className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveTemplate}
+                disabled={!templateNameInput.trim()}
+                className="px-4 py-2 text-xs font-medium text-white bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[14px]">bookmark_add</span> Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Apply Formula dialog */}
+      {showApplyTemplate && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => { setShowApplyTemplate(false); setApplyConfirmId(null) }} />
+          <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md flex flex-col max-h-[80vh]">
+            {/* Dialog header */}
+            <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+              <span className="material-symbols-outlined text-primary text-[20px]">bookmarks</span>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Apply Formula</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">Select a template to replace the current formulation.</p>
+              </div>
+              <button onClick={() => { setShowApplyTemplate(false); setApplyConfirmId(null) }} className="text-slate-400 hover:text-slate-600 p-1 rounded">
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+            {/* Template list */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+              {savedTemplates.length === 0 ? (
+                <p className="text-xs text-slate-400 italic text-center py-6">No saved templates yet.</p>
+              ) : savedTemplates.map(t => (
+                <div key={t.id} className={`rounded-lg border p-3 transition-colors ${applyConfirmId === t.id ? 'border-primary/40 bg-primary/5' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50'}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">{t.name}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{t.stageCount} stage{t.stageCount !== 1 ? 's' : ''} · {t.materialCount} material{t.materialCount !== 1 ? 's' : ''} · {t.formulas.length} formula{t.formulas.length !== 1 ? 's' : ''}</p>
+                      <p className="text-[10px] text-slate-300 dark:text-slate-600 mt-0.5">{t.savedAt}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => setSavedTemplates(prev => prev.filter(x => x.id !== t.id))}
+                        className="p-1 text-slate-300 hover:text-red-400 rounded transition-colors"
+                        title="Delete template"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">delete</span>
+                      </button>
+                      <button
+                        onClick={() => setApplyConfirmId(prev => prev === t.id ? null : t.id)}
+                        className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${applyConfirmId === t.id ? 'bg-primary/10 text-primary' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 hover:border-primary hover:text-primary'}`}
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                  {/* Inline confirm */}
+                  {applyConfirmId === t.id && (
+                    <div className="mt-3 pt-3 border-t border-primary/20 flex items-center justify-between gap-2">
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[13px]">warning</span>
+                        Current stages will be replaced.
+                      </p>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => setApplyConfirmId(null)}
+                          className="px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:text-slate-700 rounded transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleApplyTemplate(t)}
+                          className="px-2.5 py-1 text-[11px] font-semibold text-white bg-primary hover:bg-primary/90 rounded transition-colors"
+                        >
+                          Confirm
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset all stages confirmation dialog */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowResetConfirm(false)} />
+          <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-sm p-6 flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined text-red-500 text-[22px] shrink-0 mt-0.5">delete_sweep</span>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Reset all stages?</h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  All {stages.length} stage{stages.length !== 1 ? 's' : ''} and their materials will be permanently removed. This cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { handleReset(); setShowResetConfirm(false) }}
+                className="px-4 py-2 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[14px]">delete_sweep</span> Reset All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

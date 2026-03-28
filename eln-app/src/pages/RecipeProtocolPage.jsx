@@ -13,6 +13,8 @@ export default function RecipeProtocolPage() {
   const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false)
   const [showSaveMenu,       setShowSaveMenu]       = useState(false)
   const [controlsCollapsed,  setControlsCollapsed]  = useState(false)
+  const [stages,             setStages]             = useState([])
+  const [formulas,           setFormulas]           = useState([{ id: 1, name: 'Formula 1', scale: 100, includedStageIds: new Set() }])
 
   const saveMenuRef = useRef(null)
 
@@ -208,8 +210,8 @@ export default function RecipeProtocolPage() {
           <div className={`space-y-8 ${isEditing ? '' : 'opacity-70 pointer-events-none select-none'}`}>
             <div id="section-study-background"><StudyBackground isEditing={isEditing} /></div>
             <div id="section-product-specification"><ProductSpecification isEditing={isEditing} /></div>
-            <div id="section-materials"><MaterialsFormulation /></div>
-            <div id="section-procedure"><ProcedureProtocol /></div>
+            <div id="section-materials"><MaterialsFormulation stages={stages} setStages={setStages} formulas={formulas} setFormulas={setFormulas} /></div>
+            <div id="section-procedure"><ProcedureProtocol stages={stages} formulas={formulas} /></div>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import MasterTableShell from '../../components/MasterTableShell'
 import MaterialFormModal from './MaterialFormModal'
 import ConfirmDeleteModal from '../../components/ConfirmDeleteModal'
@@ -78,9 +78,20 @@ function renderCell(row, key) {
   }
 }
 
+const STORAGE_KEY = 'eln_material_master'
+
 export default function MaterialMasterPage() {
-  const [data, setData]             = useState(INITIAL_DATA)
+  const [data, setData]             = useState(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      return stored ? JSON.parse(stored) : INITIAL_DATA
+    } catch { return INITIAL_DATA }
+  })
   const [nextId, setNextId]         = useState(INITIAL_DATA.length + 1)
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  }, [data])
 
   /* modal state */
   const [formOpen, setFormOpen]       = useState(false)

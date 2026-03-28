@@ -19,6 +19,13 @@ const BG_COLORS = [
   '#DCFCE7','#DBEAFE','#EDE9FE','#FCE7F3',
   '#FEE2E2','#FFF7ED','#CCFBF1','#F0F9FF',
 ]
+const MENTION_INSTRUMENTS = [
+  'Mixer', 'Homogenizer', 'pH Meter', 'Viscometer', 'Balance',
+  'Centrifuge', 'Spectrophotometer', 'Hot Plate', 'Magnetic Stirrer',
+  'Thermometer', 'Pipette', 'Burette', 'Autoclave', 'Oven',
+  'Incubator', 'Water Bath', 'Sonicator', 'Refractometer',
+  'Microscope', 'Rheometer', 'Turbidimeter', 'Colorimeter',
+]
 const QUICK_FORMULAS = [
   'C = n / V',
   'mass = c × V × MW',
@@ -120,14 +127,16 @@ function TablePicker({ onInsert }) {
 
 /* ─── Main component ─────────────────────────── */
 const RichTextEditor = forwardRef(function RichTextEditor(
-  { isEditing = false, defaultHtml = '', minHeight = '260px', stickyToolbar = false, onChange },
+  { isEditing = false, defaultHtml = '', minHeight = '260px', stickyToolbar = false, onChange, materials = [], instruments = MENTION_INSTRUMENTS },
   ref,
 ) {
   const editorRef    = useRef(null)
   const imgInputRef  = useRef(null)
   const savedRangeRef = useRef(null)
 
-  const [activePopover, setActivePopover] = useState(null)
+  const [activePopover,    setActivePopover]    = useState(null)
+  const [mentionPopup,     setMentionPopup]     = useState(null)
+  const [mentionActiveIdx, setMentionActiveIdx] = useState(0)
   const [textColor,     setTextColor]     = useState('#000000')
   const [bgColor,       setBgColor]       = useState('transparent')
   const [fontSize,      setFontSize]      = useState(14)
@@ -266,6 +275,100 @@ const RichTextEditor = forwardRef(function RichTextEditor(
   function handleEditorClick(e) {
     if (!isEditing) return
     setSelectedImg(e.target.tagName === 'IMG' ? e.target : null)
+  }
+
+  /* ── Mention helpers ── */
+  function getMentionPreText() {
+    const sel = window.getSelection()
+    if (!sel?.rangeCount) return { preText: '', rect: null }
+    const range = sel.getRangeAt(0)
+    const rect  = range.getBoundingClientRect()
+    const walker = document.createTreeWalker(editorRef.current, NodeFilter.SHOW_TEXT, {
+      acceptNode: n => n.parentElement?.dataset?.m ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+    })
+    let preText = '', node
+    while ((node = walker.nextNode())) {
+      if (node === range.startContainer) { preText += node.textContent.slice(0, range.startOffset); break }
+      preText += node.textContent
+    }
+    return { preText, rect: rect.width + rect.height > 0 ? rect : null }
+  }
+
+  function ensureMentionTextNode(range) {
+    let { startContainer: node, startOffset: offset } = range
+    if (node.nodeType !== Node.TEXT_NODE) {
+      const tn = document.createTextNode('')
+      if (node === editorRef.current) node.appendChild(tn)
+      else node.insertBefore(tn, node.childNodes[offset] ?? null)
+      node = tn; offset = 0
+    }
+    return { node, offset }
+  }
+
+  function insertMention(text) {
+    if (!mentionPopup) return
+    const trigger = mentionPopup.type === 'material' ? '#' : '/'
+    const color   = mentionPopup.type === 'material' ? '#7c3aed' : '#0369a1'
+    const bg      = mentionPopup.type === 'material' ? '#ede9fe' : '#e0f2fe'
+    editorRef.current?.focus()
+    const sel = window.getSelection()
+    if (!sel?.rangeCount) return
+    const { node, offset } = ensureMentionTextNode(sel.getRangeAt(0))
+    const preText = node.textContent.slice(0, offset)
+    const trigPos = preText.lastIndexOf(trigger)
+    if (trigPos === -1) return
+    const del = document.createRange()
+    del.setStart(node, trigPos); del.setEnd(node, offset); del.deleteContents()
+    const span = document.createElement('span')
+    span.contentEditable = 'false'
+    span.dataset.m = mentionPopup.type === 'material' ? 'mat' : 'ins'
+    span.style.cssText = `color:${color};background:${bg};border-radius:3px;padding:1px 5px;font-weight:600;white-space:nowrap`
+    span.textContent = `${trigger}${text}`
+    del.insertNode(span)
+    const space = document.createTextNode('\u00A0')
+    span.after(space)
+    const cur = document.createRange()
+    cur.setStartAfter(space); cur.collapse(true)
+    sel.removeAllRanges(); sel.addRange(cur)
+    setMentionPopup(null)
+    onChange?.()
+  }
+
+  function handleInput() {
+    onChange?.()
+    const useMentions = materials.length > 0 || instruments.length > 0
+    if (!useMentions) return
+    const { preText, rect } = getMentionPreText()
+    const matMatch = preText.match(/#([\w\s]*)$/)
+    const insMatch = preText.match(/\/([\w\s]*)$/)
+    if (matMatch !== null) {
+      const q = matMatch[1].toLowerCase().trim()
+      const suggestions = materials.filter(m => m.toLowerCase().includes(q))
+      const top  = rect ? rect.bottom + window.scrollY + 4 : 80
+      const left = rect ? rect.left   + window.scrollX     : 80
+      setMentionPopup({ type: 'material', suggestions, top, left })
+      setMentionActiveIdx(0)
+    } else if (insMatch !== null) {
+      const q = insMatch[1].toLowerCase().trim()
+      const suggestions = instruments.filter(i => i.toLowerCase().includes(q))
+      if (suggestions.length) {
+        const top  = rect ? rect.bottom + window.scrollY + 4 : 80
+        const left = rect ? rect.left   + window.scrollX     : 80
+        setMentionPopup({ type: 'instrument', suggestions, top, left })
+        setMentionActiveIdx(0)
+      } else setMentionPopup(null)
+    } else setMentionPopup(null)
+  }
+
+  function handleKeyDown(e) {
+    if (!mentionPopup) return
+    const max = mentionPopup.suggestions.length - 1
+    if      (e.key === 'ArrowDown') { e.preventDefault(); setMentionActiveIdx(i => Math.min(i + 1, max < 0 ? 0 : max)) }
+    else if (e.key === 'ArrowUp')   { e.preventDefault(); setMentionActiveIdx(i => Math.max(i - 1, 0)) }
+    else if ((e.key === 'Enter' || e.key === 'Tab') && mentionPopup.suggestions[mentionActiveIdx]) {
+      e.preventDefault(); insertMention(mentionPopup.suggestions[mentionActiveIdx])
+    }
+    else if (e.key === 'Escape') setMentionPopup(null)
   }
 
   /* ── Toolbar JSX ── */
@@ -419,6 +522,14 @@ const RichTextEditor = forwardRef(function RichTextEditor(
         <Divider />
         <TBtn icon="undo" title="Undo" onMouseDown={(e) => { e.preventDefault(); exec('undo') }} />
         <TBtn icon="redo" title="Redo" onMouseDown={(e) => { e.preventDefault(); exec('redo') }} />
+        {(materials.length > 0 || instruments.length > 0) && (
+          <>
+            <Divider />
+            <span className="text-[9px] text-slate-300 font-mono select-none px-1">
+              <span className="text-violet-400">#</span> material &nbsp;·&nbsp; <span className="text-sky-400">/</span> instrument
+            </span>
+          </>
+        )}
       </div>
 
       {/* Image control bar */}
@@ -469,7 +580,9 @@ const RichTextEditor = forwardRef(function RichTextEditor(
         ref={editorRef}
         contentEditable={isEditing}
         suppressContentEditableWarning
-        onInput={() => onChange?.()}
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        onBlur={() => setTimeout(() => setMentionPopup(null), 150)}
         onClick={handleEditorClick}
         style={{ minHeight }}
         className={`px-8 py-6 focus:outline-none text-sm leading-relaxed
@@ -485,6 +598,38 @@ const RichTextEditor = forwardRef(function RichTextEditor(
           [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-2
           ${isEditing ? 'bg-white cursor-text' : 'bg-white'}`}
       />
+
+      {/* Mention popup */}
+      {mentionPopup && (
+        <div
+          className="fixed z-[200] bg-white border border-slate-200 rounded-lg shadow-xl py-1 w-52 max-h-52 overflow-y-auto"
+          style={{ top: mentionPopup.top, left: mentionPopup.left }}
+          onMouseDown={e => e.preventDefault()}
+        >
+          <div className="px-3 py-1 text-[9px] font-bold uppercase tracking-wider border-b border-slate-100 flex items-center gap-1.5">
+            {mentionPopup.type === 'material'
+              ? <><span className="text-violet-500 font-mono">#</span><span className="text-slate-400">Materials</span></>
+              : <><span className="text-sky-500 font-mono">/</span><span className="text-slate-400">Instruments</span></>
+            }
+          </div>
+          {mentionPopup.suggestions.length === 0 ? (
+            <p className="px-3 py-2.5 text-[10px] text-slate-400 italic leading-relaxed">
+              No materials found.<br />Add them in System Config → Material.
+            </p>
+          ) : mentionPopup.suggestions.map((s, i) => (
+            <button
+              key={s}
+              onMouseDown={e => { e.preventDefault(); insertMention(s) }}
+              className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${i === mentionActiveIdx ? 'bg-primary/10 text-primary' : 'text-slate-700 hover:bg-slate-50'}`}
+            >
+              <span className={mentionPopup.type === 'material' ? 'text-violet-500' : 'text-sky-500 mr-0.5'}>
+                {mentionPopup.type === 'material' ? '#' : '/'}
+              </span>
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
 
       {showAnnotate && selectedImg && (
         <ImageAnnotateModal

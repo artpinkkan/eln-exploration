@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import ProductSpecificationTemplateModal from './ProductSpecificationTemplateModal'
 
 const COLUMNS = ['Parameter', 'Specification', 'Unit']
@@ -114,35 +114,38 @@ export default function ProductSpecification({ isEditing = false }) {
   const [showTemplate,   setShowTemplate]   = useState(false)
   const [showSaveAs,     setShowSaveAs]     = useState(false)
   const [collapsed,      setCollapsed]      = useState(false)
-  const [saveStatus,     setSaveStatus]     = useState(null) // null | 'saving' | 'saved'
-  const saveTimerRef = useRef(null)
+  const [isDirty,        setIsDirty]        = useState(false)
+  const [alertDismissed, setAlertDismissed] = useState(false)
+  const [lastSavedAt,    setLastSavedAt]    = useState(null)
 
-  function triggerAutoSave() {
-    setSaveStatus('saving')
-    clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(() => setSaveStatus('saved'), 800)
+  function markDirty() { setIsDirty(true); setAlertDismissed(false) }
+
+  function handleSave() {
+    setIsDirty(false)
+    setAlertDismissed(false)
+    setLastSavedAt(new Date())
   }
 
   function handleApplyTemplate(parameters) {
     setRows(parameters.map((p, i) => ({ id: i + 1, ...p })))
     setShowTemplate(false)
-    triggerAutoSave()
+    markDirty()
   }
 
   function handleDeleteRow(id) {
     setRows((prev) => prev.filter((r) => r.id !== id))
-    triggerAutoSave()
+    markDirty()
   }
 
   function handleAddRow() {
     const id = Date.now()
     setRows((prev) => [...prev, { id, parameter: '', specification: '', unit: '' }])
-    triggerAutoSave()
+    markDirty()
   }
 
   function handleCellChange(id, field, value) {
     setRows((prev) => prev.map((r) => r.id === id ? { ...r, [field]: value } : r))
-    triggerAutoSave()
+    markDirty()
   }
 
   return (
@@ -154,16 +157,19 @@ export default function ProductSpecification({ isEditing = false }) {
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <span className="material-symbols-outlined text-primary" style={{ fontSize: '18px' }}>assignment_turned_in</span>
             Product Specification
-            {saveStatus === 'saving' && (
-              <span className="flex items-center gap-1 text-[10px] font-medium text-slate-400 ml-1">
-                <span className="material-symbols-outlined animate-spin" style={{ fontSize: '11px' }}>autorenew</span>
-                Saving…
+            {isDirty && !alertDismissed && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-500 ml-1">
+                <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>warning</span>
+                Unsaved changes
+                <button onClick={() => setAlertDismissed(true)} className="opacity-40 hover:opacity-100 transition-opacity leading-none">
+                  <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>close</span>
+                </button>
               </span>
             )}
-            {saveStatus === 'saved' && (
+            {lastSavedAt && (
               <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-500 ml-1">
                 <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>check_circle</span>
-                Automatically saved
+                Latest saved at {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </span>
             )}
           </h2>
@@ -191,16 +197,13 @@ export default function ProductSpecification({ isEditing = false }) {
               </button>
             )}
 
-            {/* Add row — only in editing mode */}
-            {isEditing && (
-              <button
-                onClick={handleAddRow}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>add</span>
-                Add Row
-              </button>
-            )}
+            <button
+              onClick={handleSave}
+              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium flex items-center gap-1.5 transition-colors"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>save</span>
+              Save
+            </button>
 
             <button
               onClick={() => setCollapsed((v) => !v)}
@@ -233,13 +236,24 @@ export default function ProductSpecification({ isEditing = false }) {
                   {rows.length === 0 ? (
                     <tr>
                       <td colSpan={isEditing ? 5 : 4} className="py-12 text-center">
-                        <div className="flex flex-col items-center gap-2">
+                        <div className="flex flex-col items-center gap-3">
                           <span className="material-symbols-outlined text-slate-200" style={{ fontSize: '36px' }}>assignment_turned_in</span>
                           <span className="text-xs text-slate-400 font-medium">No specifications yet</span>
-                          {isEditing && (
-                            <p className="text-[10px] text-slate-400">
-                              Use <span className="font-semibold">Apply Template</span> to populate from a saved template, or <span className="font-semibold">Add Row</span> to enter manually.
-                            </p>
+                          {isEditing ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <button
+                                onClick={handleAddRow}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm"
+                              >
+                                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>add_circle</span>
+                                Add Row
+                              </button>
+                              <p className="text-[10px] text-slate-400">
+                                or use <span className="font-semibold">Apply Template</span> to populate from a saved template
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-slate-400">Switch to edit mode to add specifications.</p>
                           )}
                         </div>
                       </td>
@@ -314,6 +328,15 @@ export default function ProductSpecification({ isEditing = false }) {
             {/* Footer */}
             {rows.length > 0 && (
               <div className="px-5 py-2.5 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between">
+                {isEditing && (
+                  <button
+                    onClick={handleAddRow}
+                    className="inline-flex items-center gap-1.5 text-primary hover:text-primary/80 text-[11px] font-bold uppercase tracking-wider transition-colors"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>add_circle</span>
+                    Add Row
+                  </button>
+                )}
                 <span className="text-[10px] text-slate-400">{rows.length} parameter{rows.length !== 1 ? 's' : ''}</span>
               </div>
             )}
