@@ -1,7 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const MANAGER_OPTIONS    = ['Ahmad Rasyid', 'Elena Smith', 'Hendra Wijaya', 'Lisa Tanaka']
 const CONTRIBUTOR_OPTIONS = ['Siti Rahayu', 'Marcus Lee', 'Priya Nair', 'Nurul Hidayah']
+
+const DEFAULT_FIELDS = [
+  { label: 'Project Name',    value: 'project 3 - pinkan', icon: 'folder_open' },
+  { label: 'Product Name',    value: 'Hydro Coco',          icon: 'inventory_2' },
+  { label: 'Experiment Name', value: 'testing 1',           icon: 'science'     },
+  { label: 'Retained Sample', value: '',                    icon: 'colorize'    },
+  { label: 'Location',        value: '',                    icon: 'location_on' },
+]
 
 const AVATAR_COLORS = [
   'bg-primary/20 text-primary',
@@ -48,17 +56,18 @@ function PersonRow({ name, colorClass, onRemove }) {
   )
 }
 
-export default function ExperimentCollaboratorBar({ isEditing = false }) {
-  const [manager, setManager]           = useState(null)
-  const [contributors, setContributors] = useState(['crdadmin crdadmin', 'pharma pharma'])
+export default function ExperimentCollaboratorBar({ isEditing = false, initialData, onDataChange }) {
+  const [manager,      setManager]      = useState(initialData?.manager      ?? null)
+  const [contributors, setContributors] = useState(initialData?.contributors ?? ['crdadmin crdadmin', 'pharma pharma'])
+  const [fields,       setFields]       = useState(initialData?.fields       ?? DEFAULT_FIELDS)
 
-  const fields = [
-    { label: 'Project Name',     value: 'project 3 - pinkan', icon: 'folder_open'  },
-    { label: 'Product Name',     value: 'Hydro Coco',          icon: 'inventory_2'  },
-    { label: 'Experiment Name',  value: 'testing 1',           icon: 'science'      },
-    { label: 'Retained Sample',  value: '—',                   icon: 'colorize'     },
-    { label: 'Location',         value: '—',                   icon: 'location_on'  },
-  ]
+  useEffect(() => {
+    onDataChange?.({ manager, contributors, fields })
+  }, [manager, contributors, fields])
+
+  function updateField(idx, value) {
+    setFields(prev => prev.map((f, i) => i === idx ? { ...f, value } : f))
+  }
 
   const availableContributors = CONTRIBUTOR_OPTIONS.filter((n) => !contributors.includes(n))
 
@@ -78,13 +87,14 @@ export default function ExperimentCollaboratorBar({ isEditing = false }) {
             {isEditing ? (
               <input
                 type="text"
-                defaultValue={field.value === '—' ? '' : field.value}
-                placeholder={field.value === '—' ? 'Not set' : ''}
+                value={field.value}
+                onChange={(e) => updateField(i, e.target.value)}
+                placeholder="Not set"
                 className="w-full text-xs font-medium text-slate-800 bg-slate-50 border border-slate-200 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary placeholder-slate-300"
               />
             ) : (
-              <span className={`text-xs font-medium truncate ${field.value === '—' ? 'text-slate-300 italic' : 'text-slate-800'}`}>
-                {field.value}
+              <span className={`text-xs font-medium truncate ${!field.value ? 'text-slate-300 italic' : 'text-slate-800'}`}>
+                {field.value || '—'}
               </span>
             )}
           </div>

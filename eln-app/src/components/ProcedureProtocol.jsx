@@ -384,6 +384,7 @@ function ProcedureCard({
   const descRef = useRef(null)
 
   const [menuOpen,             setMenuOpen]             = useState(false)
+  const [showSaveAsTemplate,   setShowSaveAsTemplate]   = useState(false)
   const [showAddForm,          setShowAddForm]          = useState(false)
   const [addForm,              setAddForm]              = useState(EMPTY_FORM)
   const [formError,            setFormError]            = useState('')
@@ -481,12 +482,18 @@ function ProcedureCard({
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-30 overflow-hidden">
+                  <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-30 overflow-hidden">
                     <button
                       onClick={() => { onDuplicate(); setMenuOpen(false) }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">content_copy</span> Duplicate
+                    </button>
+                    <button
+                      onClick={() => { setShowSaveAsTemplate(true); setMenuOpen(false) }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">bookmark_add</span> Save as Template
                     </button>
                     <div className="border-t border-slate-100 dark:border-slate-800" />
                     <button
@@ -909,6 +916,13 @@ function ProcedureCard({
       </div>
     </div>
 
+    {showSaveAsTemplate && (
+      <SaveProcedureTemplateModal
+        procedures={[procedure]}
+        onClose={() => setShowSaveAsTemplate(false)}
+      />
+    )}
+
     {showMatrixModal && (
       <MatrixConfigModal
         initialName={editingMatrixCriteria ? editingMatrixCriteria.name : addForm.name}
@@ -923,138 +937,394 @@ function ProcedureCard({
   )
 }
 
-// ── Apply Existing Procedure Modal ────────────────────────────────────────────
+// ── Procedure Template helpers ────────────────────────────────────────────────
 
-function ApplyProcedureModal({ allProcedures, onApply, onClose }) {
-  const [selected, setSelected] = useState(null)
-  const preview = allProcedures[selected] ?? null
+const PROC_TEMPLATE_KEY = 'eln_procedure_templates'
+
+function loadProcedureTemplates() {
+  try { return JSON.parse(localStorage.getItem(PROC_TEMPLATE_KEY) || '[]') } catch { return [] }
+}
+function saveProcedureTemplate(name, procedures) {
+  const existing = loadProcedureTemplates()
+  const d = new Date()
+  const pad = (n) => String(n).padStart(2, '0')
+  const createdAt = `${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const tpl = { id: `tpl-${Date.now()}`, name, createdAt, procedures }
+  localStorage.setItem(PROC_TEMPLATE_KEY, JSON.stringify([tpl, ...existing]))
+}
+function deleteProcedureTemplate(id) {
+  const next = loadProcedureTemplates().filter(t => t.id !== id)
+  localStorage.setItem(PROC_TEMPLATE_KEY, JSON.stringify(next))
+}
+
+// ── Save as Procedure Template Modal ─────────────────────────────────────────
+
+function SaveProcedureTemplateModal({ procedures, onClose }) {
+  const [name,  setName]  = useState('')
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
+
+  function handleSave() {
+    if (!name.trim()) { setError('Template name is required'); return }
+    saveProcedureTemplate(name.trim(), procedures)
+    setSaved(true)
+    setTimeout(onClose, 1200)
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-2xl flex flex-col max-h-[75vh]">
+    <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-sm">
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
-          <span className="material-symbols-outlined text-primary text-[20px]">content_copy</span>
-          <div className="flex-1">
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Apply Existing Procedure</h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">Select a procedure to preview, then apply it to this stage.</p>
+        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary" style={{ fontSize: '17px' }}>bookmark_add</span>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Save as Template</h3>
+              <p className="text-[11px] text-slate-400">{procedures.length} procedure{procedures.length !== 1 ? 's' : ''} will be saved</p>
+            </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded transition-colors">
-            <span className="material-symbols-outlined text-[18px]">close</span>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
           </button>
         </div>
 
-        {/* Body — split list + preview */}
-        <div className="flex flex-1 overflow-hidden min-h-0">
-          {/* Left — procedure list */}
-          <div className="w-56 shrink-0 border-r border-slate-200 dark:border-slate-700 overflow-y-auto">
-            {allProcedures.length === 0 ? (
-              <p className="text-xs text-slate-400 italic text-center py-8 px-4">No procedures in other stages yet.</p>
-            ) : allProcedures.map((p, i) => (
-              <button
-                key={i}
-                onClick={() => setSelected(i)}
-                className={`w-full text-left px-4 py-3 border-b border-slate-100 dark:border-slate-800 transition-colors ${
-                  selected === i
-                    ? 'bg-primary/10 border-l-2 border-l-primary'
-                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                }`}
-              >
-                <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">
-                  {p.title || <span className="italic text-slate-400">Untitled</span>}
-                </p>
-                <p className="text-[10px] text-slate-400 mt-0.5 truncate">{p.formulaName}</p>
-                <p className="text-[10px] text-slate-400 truncate">{p.stageName}</p>
-              </button>
-            ))}
+        {/* Body */}
+        <div className="px-5 py-4 space-y-3">
+          <div className="space-y-1">
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              Template Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => { setName(e.target.value); setError('') }}
+              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+              placeholder="e.g. Standard Mixing Protocol"
+              className={`w-full text-xs px-3 py-2 bg-slate-50 dark:bg-slate-800 border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary placeholder-slate-400 ${error ? 'border-red-400' : 'border-slate-200 dark:border-slate-700'}`}
+            />
+            {error && <p className="text-[10px] text-red-500">{error}</p>}
           </div>
 
-          {/* Right — preview */}
-          <div className="flex-1 overflow-y-auto flex flex-col">
-            {preview ? (
-              <>
-                <div className="flex-1 p-5 space-y-4">
-                  {/* Context */}
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-primary/10 text-primary rounded">{preview.formulaName}</span>
-                    <span className="material-symbols-outlined text-slate-300 text-[14px]">chevron_right</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded">{preview.stageName}</span>
-                  </div>
-
-                  {/* Title */}
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Procedure Name</p>
-                    <p className="text-sm font-semibold text-slate-800 dark:text-white">
-                      {preview.title || <span className="italic text-slate-400">Untitled</span>}
-                    </p>
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Description</p>
-                    {preview.description
-                      ? <div
-                          className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed
-                            [&_[data-m='mat']]:inline-flex [&_[data-m='mat']]:items-center [&_[data-m='mat']]:gap-0.5 [&_[data-m='mat']]:px-1.5 [&_[data-m='mat']]:py-0.5 [&_[data-m='mat']]:rounded [&_[data-m='mat']]:bg-violet-100 [&_[data-m='mat']]:text-violet-700 [&_[data-m='mat']]:font-semibold [&_[data-m='mat']]:text-[11px]
-                            [&_[data-m='ins']]:inline-flex [&_[data-m='ins']]:items-center [&_[data-m='ins']]:gap-0.5 [&_[data-m='ins']]:px-1.5 [&_[data-m='ins']]:py-0.5 [&_[data-m='ins']]:rounded [&_[data-m='ins']]:bg-sky-100 [&_[data-m='ins']]:text-sky-700 [&_[data-m='ins']]:font-semibold [&_[data-m='ins']]:text-[11px]"
-                          dangerouslySetInnerHTML={{ __html: preview.description }}
-                        />
-                      : <p className="text-xs text-slate-300 italic">No description.</p>
-                    }
-                  </div>
-
-                  {/* Criteria */}
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Criteria</p>
-                    {preview.criteria.length === 0 ? (
-                      <p className="text-xs text-slate-300 italic">No criteria defined.</p>
-                    ) : (
-                      <div className="space-y-1.5">
-                        {preview.criteria.map((c, ci) => {
-                          const typeInfo = INPUT_TYPES.find(t => t.value === c.inputType) ?? INPUT_TYPES[0]
-                          return (
-                            <div key={ci} className="flex items-start gap-2 px-2.5 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{c.name || '—'}</span>
-                                  <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${typeInfo.cls}`}>
-                                    {typeInfo.label}
-                                  </span>
-                                  {c.unit && <span className="text-[10px] font-mono text-slate-400">{c.unit}</span>}
-                                </div>
-                                {c.description && (
-                                  <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{c.description}</p>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 overflow-hidden">
+            <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-700">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Procedures to save</p>
+            </div>
+            <div className="divide-y divide-slate-100 dark:divide-slate-700 max-h-40 overflow-y-auto">
+              {procedures.map((p, i) => (
+                <div key={i} className="px-3 py-1.5 flex items-center justify-between gap-2">
+                  <span className="text-xs text-slate-700 dark:text-slate-300 truncate">{p.title || <span className="italic text-slate-400">Untitled</span>}</span>
+                  <span className="text-[10px] text-slate-400 shrink-0">{p.criteria.length} criteria</span>
                 </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-                {/* Apply footer */}
-                <div className="shrink-0 px-5 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between gap-3">
-                  <p className="text-[11px] text-slate-400">A copy will be added to the current stage.</p>
-                  <button
-                    onClick={() => onApply(preview)}
-                    className="px-4 py-2 bg-primary hover:bg-primary/90 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">content_copy</span> Apply to Stage
-                  </button>
+        {/* Footer */}
+        <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 rounded-b-2xl flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-1.5 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-white transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saved}
+            className="px-4 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 shadow-sm transition-colors disabled:opacity-60 flex items-center gap-1.5"
+          >
+            {saved
+              ? <><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>check_circle</span>Saved!</>
+              : <><span className="material-symbols-outlined" style={{ fontSize: '13px' }}>bookmark_add</span>Save Template</>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Apply Procedure Modal ─────────────────────────────────────────────────────
+
+function ApplyProcedureModal({ allProcedures, onApply, onClose }) {
+  const [tab,      setTab]      = useState('template')   // 'template' | 'experiment'
+  const [selected, setSelected] = useState(null)
+  const [templates, setTemplates] = useState(loadProcedureTemplates)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+
+  const activeList    = tab === 'template' ? templates : allProcedures
+  const selectedItem  = selected !== null ? activeList[selected] : null
+
+  function switchTab(t) { setTab(t); setSelected(null) }
+
+  function handleDeleteTemplate(id, e) { e.stopPropagation(); setConfirmDeleteId(id) }
+  function confirmDeleteTemplate() {
+    deleteProcedureTemplate(confirmDeleteId)
+    const next = loadProcedureTemplates()
+    setTemplates(next)
+    if (selected !== null && selected >= next.length) setSelected(next.length > 0 ? next.length - 1 : null)
+    setConfirmDeleteId(null)
+  }
+
+  function handleApply() {
+    if (!selectedItem) return
+    if (tab === 'experiment') {
+      onApply([{ title: selectedItem.title, description: selectedItem.description, criteria: selectedItem.criteria }])
+    } else {
+      onApply(selectedItem.procedures)
+    }
+  }
+
+  // Preview procedures array
+  const previewProcedures = tab === 'template'
+    ? (selectedItem?.procedures ?? [])
+    : (selectedItem ? [selectedItem] : [])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-3xl flex flex-col overflow-hidden" style={{ maxHeight: '85vh' }}>
+
+        {/* ── Header ── */}
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 shrink-0 bg-white dark:bg-slate-900">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-primary" style={{ fontSize: '20px' }}>content_copy</span>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Apply Procedure</h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">Copy from a saved template or another stage in this experiment.</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+          </button>
+        </div>
+
+        {/* ── Tabs ── */}
+        <div className="flex gap-1 px-6 pt-3 pb-0 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+          {[
+            { key: 'template',   icon: 'bookmarks', label: 'From Templates',       count: templates.length },
+            { key: 'experiment', icon: 'science',   label: 'From This Experiment', count: allProcedures.length },
+          ].map(({ key, icon, label, count }) => (
+            <button
+              key={key}
+              onClick={() => switchTab(key)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold rounded-t-lg border-b-2 transition-colors relative -mb-px ${
+                tab === key
+                  ? 'border-primary text-primary bg-primary/5'
+                  : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50'
+              }`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>{icon}</span>
+              {label}
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${tab === key ? 'bg-primary/15 text-primary' : 'bg-slate-100 text-slate-400'}`}>
+                {count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* ── Body ── */}
+        <div className="flex flex-1 overflow-hidden min-h-0">
+
+          {/* Left — list panel */}
+          <div className="w-64 shrink-0 border-r border-slate-100 dark:border-slate-800 overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50">
+            {activeList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-14 px-5 text-center">
+                <span className="material-symbols-outlined text-slate-200 dark:text-slate-700" style={{ fontSize: '40px' }}>
+                  {tab === 'template' ? 'bookmarks' : 'science'}
+                </span>
+                <div>
+                  <p className="text-xs font-semibold text-slate-400">
+                    {tab === 'template' ? 'No templates yet' : 'No procedures available'}
+                  </p>
+                  <p className="text-[10px] text-slate-300 mt-1 leading-relaxed">
+                    {tab === 'template'
+                      ? 'Use ··· → Save as Template on any procedure card.'
+                      : 'Procedures from other stages will appear here.'}
+                  </p>
                 </div>
-              </>
+              </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center p-8">
-                <span className="material-symbols-outlined text-slate-200 text-[36px]">preview</span>
-                <p className="text-xs text-slate-400">Select a procedure on the left to preview it here.</p>
+              <div className="py-2">
+                {activeList.map((item, i) => {
+                  const isActive = selected === i
+                  const title    = tab === 'template' ? item.name : (item.title || 'Untitled')
+                  const sub1     = tab === 'template'
+                    ? `${item.procedures.length} procedure${item.procedures.length !== 1 ? 's' : ''}`
+                    : item.formulaName
+                  const sub2     = tab === 'template' ? item.createdAt : item.stageName
+                  return (
+                    <div
+                      key={tab === 'template' ? item.id : i}
+                      onClick={() => setSelected(i)}
+                      className={`group mx-2 mb-1 px-3 py-2.5 rounded-lg cursor-pointer transition-all flex items-start gap-2 ${
+                        isActive
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm'
+                      }`}
+                    >
+                      <span className={`material-symbols-outlined shrink-0 mt-0.5 text-[16px] ${isActive ? 'text-white/80' : 'text-slate-300'}`}>
+                        {tab === 'template' ? 'bookmarks' : 'description'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs font-semibold truncate ${isActive ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>{title}</p>
+                        <p className={`text-[10px] truncate mt-0.5 ${isActive ? 'text-white/70' : 'text-slate-400'}`}>{sub1}</p>
+                        {sub2 && <p className={`text-[10px] truncate ${isActive ? 'text-white/60' : 'text-slate-300'}`}>{sub2}</p>}
+                      </div>
+                      {tab === 'template' && (
+                        <button
+                          onClick={(e) => handleDeleteTemplate(item.id, e)}
+                          className={`opacity-0 group-hover:opacity-100 shrink-0 transition-all rounded p-0.5 ${isActive ? 'hover:bg-white/20 text-white/60 hover:text-white' : 'hover:bg-red-50 text-slate-300 hover:text-red-400'}`}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>delete</span>
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Right — preview panel */}
+          <div className="flex-1 overflow-y-auto">
+            {selectedItem ? (
+              <div className="p-6 space-y-5">
+
+                {/* Preview header */}
+                <div className="flex items-start gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-primary" style={{ fontSize: '20px' }}>
+                      {tab === 'template' ? 'bookmarks' : 'description'}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                      {tab === 'template' ? selectedItem.name : (selectedItem.title || 'Untitled')}
+                    </h4>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {tab === 'template' ? (
+                        <>
+                          <span className="inline-flex items-center gap-1 text-[10px] text-slate-400">
+                            <span className="material-symbols-outlined text-[12px]">calendar_today</span>
+                            {selectedItem.createdAt}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 bg-primary/10 text-primary rounded-full">
+                            {selectedItem.procedures.length} procedure{selectedItem.procedures.length !== 1 ? 's' : ''}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-[10px] font-bold px-2 py-0.5 bg-primary/10 text-primary rounded-full">{selectedItem.formulaName}</span>
+                          <span className="material-symbols-outlined text-slate-200 text-[13px]">chevron_right</span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full">{selectedItem.stageName}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Procedure cards */}
+                <div className="space-y-3">
+                  {previewProcedures.map((p, i) => (
+                    <div key={i} className="rounded-xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+                      {/* Procedure header */}
+                      <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800/60 flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-[10px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex-1">
+                          {p.title || <span className="italic text-slate-400">Untitled procedure</span>}
+                        </span>
+                        {p.criteria.length > 0 && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 bg-primary/10 text-primary rounded-full shrink-0">
+                            {p.criteria.length} criteria
+                          </span>
+                        )}
+                      </div>
+                      {/* Description */}
+                      {p.description && (
+                        <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800">
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Description</p>
+                          <div
+                            className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed
+                              [&_[data-m='mat']]:inline-flex [&_[data-m='mat']]:items-center [&_[data-m='mat']]:px-1.5 [&_[data-m='mat']]:py-0.5 [&_[data-m='mat']]:rounded [&_[data-m='mat']]:bg-violet-100 [&_[data-m='mat']]:text-violet-700 [&_[data-m='mat']]:font-semibold [&_[data-m='mat']]:text-[10px]
+                              [&_[data-m='ins']]:inline-flex [&_[data-m='ins']]:items-center [&_[data-m='ins']]:px-1.5 [&_[data-m='ins']]:py-0.5 [&_[data-m='ins']]:rounded [&_[data-m='ins']]:bg-sky-100 [&_[data-m='ins']]:text-sky-700 [&_[data-m='ins']]:font-semibold [&_[data-m='ins']]:text-[10px]"
+                            dangerouslySetInnerHTML={{ __html: p.description }}
+                          />
+                        </div>
+                      )}
+                      {/* Criteria */}
+                      {p.criteria.length > 0 && (
+                        <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800">
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-2">Criteria</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {p.criteria.map((c, ci) => {
+                              const typeInfo = INPUT_TYPES.find(t => t.value === c.inputType) ?? INPUT_TYPES[0]
+                              return (
+                                <span key={ci} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-medium text-slate-700 dark:text-slate-300">
+                                  <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${typeInfo.cls}`}>{typeInfo.label}</span>
+                                  {c.name}
+                                </span>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-3 h-full py-16 text-center px-8">
+                <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-slate-300 dark:text-slate-600" style={{ fontSize: '28px' }}>
+                    {tab === 'template' ? 'bookmarks' : 'science'}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-400">Select an item to preview</p>
+                  <p className="text-[11px] text-slate-300 mt-1">Choose from the list on the left to see details.</p>
+                </div>
               </div>
             )}
           </div>
         </div>
+
+        {/* ── Footer ── */}
+        <div className="px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-between shrink-0">
+          <p className="text-[10px] text-slate-400">
+            {tab === 'template'
+              ? templates.length === 0 ? 'Save a procedure as a template to reuse it here.' : `${templates.length} template${templates.length !== 1 ? 's' : ''} available`
+              : allProcedures.length === 0 ? 'Procedures from other stages will appear here.' : `${allProcedures.length} procedure${allProcedures.length !== 1 ? 's' : ''} available`}
+          </p>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="px-4 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors">
+              Cancel
+            </button>
+            <button
+              onClick={handleApply}
+              disabled={!selectedItem}
+              className="px-5 py-1.5 text-xs font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 shadow-sm transition-colors disabled:opacity-40 flex items-center gap-1.5"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>add_circle</span>
+              Apply to Stage
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Confirm delete */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setConfirmDeleteId(null)} />
+          <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6 w-80">
+            <p className="text-sm font-bold text-slate-800 dark:text-white mb-1">Delete template?</p>
+            <p className="text-xs text-slate-500 mb-4">This cannot be undone.</p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1.5 text-xs text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50">Cancel</button>
+              <button onClick={confirmDeleteTemplate} className="px-3 py-1.5 text-xs font-semibold text-white bg-red-500 rounded-lg hover:bg-red-600">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1092,6 +1362,16 @@ function StageSection({ index, stage, procedures, allProcedures, onProceduresCha
       description: source.description,
       criteria: source.criteria.map(c => ({ ...c, id: nextCriteriaId++ })),
     }])
+    setShowApplyModal(false)
+  }
+
+  const applyTemplate = (sourceProcedures) => {
+    const added = sourceProcedures.map(p => ({
+      ...p,
+      id: nextProcedureId++,
+      criteria: p.criteria.map(c => ({ ...c, id: nextCriteriaId++ })),
+    }))
+    change([...procedures, ...added])
     setShowApplyModal(false)
   }
 
@@ -1163,10 +1443,9 @@ function StageSection({ index, stage, procedures, allProcedures, onProceduresCha
             </button>
             <button
               onClick={e => { e.stopPropagation(); setShowApplyModal(true) }}
-              disabled={allProcedures.length === 0}
-              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed text-[11px] font-bold uppercase tracking-wider transition-colors"
+              className="inline-flex items-center gap-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-[11px] font-bold uppercase tracking-wider transition-colors"
             >
-              <span className="material-symbols-outlined text-[14px]">content_copy</span> Apply Existing
+              <span className="material-symbols-outlined text-[14px]">content_copy</span> Apply
             </button>
           </div>
         </div>
@@ -1175,10 +1454,12 @@ function StageSection({ index, stage, procedures, allProcedures, onProceduresCha
       {showApplyModal && (
         <ApplyProcedureModal
           allProcedures={allProcedures}
-          onApply={applyProcedure}
+          onApply={applyTemplate}
           onClose={() => setShowApplyModal(false)}
         />
       )}
+
+
     </div>
   )
 }
@@ -1245,7 +1526,7 @@ function FormulaGroup({ formula, allStages, stepContent, onContentChange, getAll
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 
-export default function ProcedureProtocol({ stages, formulas }) {
+export default function ProcedureProtocol({ stages, formulas, onStepContentChange }) {
   const [stepContent,     setStepContent]     = useState({})
   const [isDirty,         setIsDirty]         = useState(false)
 
@@ -1264,7 +1545,11 @@ export default function ProcedureProtocol({ stages, formulas }) {
   const [lastSavedAt,     setLastSavedAt]     = useState(null)
 
   const handleContentChange = (key, procedures) => {
-    setStepContent(prev => ({ ...prev, [key]: procedures }))
+    setStepContent(prev => {
+      const next = { ...prev, [key]: procedures }
+      onStepContentChange?.(next)
+      return next
+    })
     setIsDirty(true)
     setAlertDismissed(false)
   }

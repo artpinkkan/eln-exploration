@@ -10,7 +10,7 @@ const INITIAL_HTML = [
   '<p style="color:#64748b">State the primary and secondary goals of this formulation...</p>',
 ].join('')
 
-export default function StudyBackground({ isEditing = false }) {
+export default function StudyBackground({ isEditing = false, initialHtml = INITIAL_HTML, onHtmlChange }) {
   const inlineRef  = useRef(null)
   const modalRef   = useRef(null)
 
@@ -20,7 +20,11 @@ export default function StudyBackground({ isEditing = false }) {
   const [alertDismissed, setAlertDismissed] = useState(false)
   const [lastSavedAt,    setLastSavedAt]    = useState(null)
 
-  function handleChange() { setIsDirty(true); setAlertDismissed(false) }
+  function handleChange() {
+    setIsDirty(true)
+    setAlertDismissed(false)
+    onHtmlChange?.(inlineRef.current?.innerHTML ?? '')
+  }
 
   function handleSave() {
     setIsDirty(false)
@@ -103,7 +107,7 @@ export default function StudyBackground({ isEditing = false }) {
           <RichTextEditor
             ref={inlineRef}
             isEditing={isEditing}
-            defaultHtml={INITIAL_HTML}
+            defaultHtml={initialHtml}
             minHeight="260px"
             onChange={handleChange}
           />

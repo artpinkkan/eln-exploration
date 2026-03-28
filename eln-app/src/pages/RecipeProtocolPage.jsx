@@ -7,14 +7,25 @@ import ProductSpecification from '../components/ProductSpecification'
 import ProcedureProtocol from '../components/ProcedureProtocol'
 import FloatingActions from '../components/FloatingActions'
 import SaveAsFormulaModal from '../components/SaveAsFormulaModal'
+import ExportPDFModal from '../components/ExportPDFModal'
+import ApplyExperimentTemplateModal from '../components/ApplyExperimentTemplateModal'
 
 export default function RecipeProtocolPage() {
   const [isEditing,          setIsEditing]          = useState(false)
   const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false)
+  const [showExportPDF,      setShowExportPDF]      = useState(false)
+  const [stepContent,        setStepContent]        = useState({})
   const [showSaveMenu,       setShowSaveMenu]       = useState(false)
   const [controlsCollapsed,  setControlsCollapsed]  = useState(false)
   const [stages,             setStages]             = useState([])
   const [formulas,           setFormulas]           = useState([{ id: 1, name: 'Formula 1', scale: 100, includedStageIds: new Set() }])
+  const [lastSync,           setLastSync]           = useState(null)
+  const [showApplyTemplate,  setShowApplyTemplate]  = useState(false)
+  // Lifted state from section components — tracked for template save/apply
+  const [studyBgHtml,      setStudyBgHtml]      = useState(null)
+  const [specRows,         setSpecRows]         = useState([])
+  const [collaboratorData, setCollaboratorData] = useState(null)
+  const [sectionKey,       setSectionKey]       = useState(0)
 
   const saveMenuRef = useRef(null)
 
@@ -27,6 +38,18 @@ export default function RecipeProtocolPage() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  function formatSync(date) {
+    if (!date) return null
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${pad(date.getDate())}-${pad(date.getMonth()+1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  }
+
+  function handleSaveChanges() {
+    const now = new Date()
+    setLastSync(now)
+    setShowSaveMenu(false)
+  }
 
   function finishEditing() {
     setIsEditing(false)
@@ -82,7 +105,11 @@ export default function RecipeProtocolPage() {
         <div className="flex items-center justify-between px-8 py-2">
           {/* Left: badges */}
           <div className="flex items-center gap-3">
-            <span className="text-[10px] text-slate-400">Last sync: 20-03-2026 15:41</span>
+            <span className="text-[10px] text-slate-400">
+              {lastSync
+                ? <><span className="text-emerald-500 font-medium">Saved</span> {formatSync(lastSync)}</>
+                : 'Not saved yet'}
+            </span>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 uppercase tracking-widest">
               In Progress
             </span>
@@ -102,14 +129,18 @@ export default function RecipeProtocolPage() {
           {/* Right: action buttons */}
           <div className="flex items-center gap-2">
             {/* Export — always active */}
-            <button className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 shadow-sm transition-colors">
-              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>download</span>
-              Export
+            <button
+              onClick={() => setShowExportPDF(true)}
+              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 shadow-sm transition-colors"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>picture_as_pdf</span>
+              Export PDF
             </button>
 
             {/* Apply Template */}
             <button
               disabled={!isEditing}
+              onClick={() => isEditing && setShowApplyTemplate(true)}
               className={`px-3 py-1.5 border rounded-lg text-xs font-medium flex items-center gap-1.5 shadow-sm transition-colors ${
                 isEditing
                   ? 'bg-white border-primary/30 text-primary hover:bg-primary/5'
@@ -125,7 +156,7 @@ export default function RecipeProtocolPage() {
             <div className="relative flex" ref={saveMenuRef}>
               <button
                 disabled={!isEditing}
-                onClick={() => isEditing && setShowSaveMenu(false)}
+                onClick={() => isEditing && handleSaveChanges()}
                 className={`px-3 py-1.5 border rounded-l-lg text-xs font-medium flex items-center gap-1.5 shadow-sm transition-colors border-r-0 ${
                   isEditing
                     ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -153,7 +184,7 @@ export default function RecipeProtocolPage() {
               {showSaveMenu && (
                 <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-50 overflow-hidden">
                   <button
-                    onClick={() => setShowSaveMenu(false)}
+                    onClick={handleSaveChanges}
                     className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                   >
                     <span className="material-symbols-outlined text-sm text-primary">save</span>
@@ -205,13 +236,32 @@ export default function RecipeProtocolPage() {
       <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar flex-1">
         <div>
           <div id="section-experiment-info" className="mb-8">
-            <ExperimentCollaboratorBar isEditing={isEditing} />
+            <ExperimentCollaboratorBar
+              key={`ecb-${sectionKey}`}
+              isEditing={isEditing}
+              initialData={collaboratorData}
+              onDataChange={setCollaboratorData}
+            />
           </div>
           <div className={`space-y-8 ${isEditing ? '' : 'opacity-70 pointer-events-none select-none'}`}>
-            <div id="section-study-background"><StudyBackground isEditing={isEditing} /></div>
-            <div id="section-product-specification"><ProductSpecification isEditing={isEditing} /></div>
+            <div id="section-study-background">
+              <StudyBackground
+                key={`sb-${sectionKey}`}
+                isEditing={isEditing}
+                initialHtml={studyBgHtml ?? undefined}
+                onHtmlChange={setStudyBgHtml}
+              />
+            </div>
+            <div id="section-product-specification">
+              <ProductSpecification
+                key={`ps-${sectionKey}`}
+                isEditing={isEditing}
+                initialRows={specRows.length > 0 ? specRows : undefined}
+                onRowsChange={setSpecRows}
+              />
+            </div>
             <div id="section-materials"><MaterialsFormulation stages={stages} setStages={setStages} formulas={formulas} setFormulas={setFormulas} /></div>
-            <div id="section-procedure"><ProcedureProtocol stages={stages} formulas={formulas} /></div>
+            <div id="section-procedure"><ProcedureProtocol stages={stages} formulas={formulas} onStepContentChange={setStepContent} /></div>
           </div>
         </div>
       </div>
@@ -219,7 +269,40 @@ export default function RecipeProtocolPage() {
       <FloatingActions />
 
       {showSaveAsTemplate && (
-        <SaveAsFormulaModal onClose={() => setShowSaveAsTemplate(false)} />
+        <SaveAsFormulaModal
+          stages={stages}
+          formulas={formulas}
+          stepContent={stepContent}
+          studyBgHtml={studyBgHtml}
+          specRows={specRows}
+          collaboratorData={collaboratorData}
+          onClose={() => setShowSaveAsTemplate(false)}
+        />
+      )}
+
+      {showApplyTemplate && (
+        <ApplyExperimentTemplateModal
+          onApply={(tpl) => {
+            if (tpl.data.stages?.length)    setStages(tpl.data.stages)
+            if (tpl.data.formulas?.length)  setFormulas(tpl.data.formulas.map(f => ({ ...f, includedStageIds: new Set(f.includedStageIds) })))
+            if (tpl.data.stepContent)       setStepContent(tpl.data.stepContent)
+            if (tpl.data.studyBgHtml)       setStudyBgHtml(tpl.data.studyBgHtml)
+            if (tpl.data.specRows?.length)  setSpecRows(tpl.data.specRows)
+            if (tpl.data.collaboratorData)  setCollaboratorData(tpl.data.collaboratorData)
+            setSectionKey(k => k + 1)
+            setShowApplyTemplate(false)
+          }}
+          onClose={() => setShowApplyTemplate(false)}
+        />
+      )}
+
+      {showExportPDF && (
+        <ExportPDFModal
+          onClose={() => setShowExportPDF(false)}
+          stages={stages}
+          formulas={formulas}
+          stepContent={stepContent}
+        />
       )}
     </>
   )

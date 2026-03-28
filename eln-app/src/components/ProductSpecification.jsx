@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ProductSpecificationTemplateModal from './ProductSpecificationTemplateModal'
 
 const COLUMNS = ['Parameter', 'Specification', 'Unit']
@@ -109,14 +109,16 @@ function SaveAsTemplateModal({ parameters, onClose }) {
   )
 }
 
-export default function ProductSpecification({ isEditing = false }) {
-  const [rows,           setRows]           = useState([])
+export default function ProductSpecification({ isEditing = false, initialRows, onRowsChange }) {
+  const [rows,           setRows]           = useState(() => initialRows ?? [])
   const [showTemplate,   setShowTemplate]   = useState(false)
   const [showSaveAs,     setShowSaveAs]     = useState(false)
   const [collapsed,      setCollapsed]      = useState(false)
   const [isDirty,        setIsDirty]        = useState(false)
   const [alertDismissed, setAlertDismissed] = useState(false)
   const [lastSavedAt,    setLastSavedAt]    = useState(null)
+
+  useEffect(() => { onRowsChange?.(rows) }, [rows])
 
   function markDirty() { setIsDirty(true); setAlertDismissed(false) }
 
